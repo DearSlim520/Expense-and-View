@@ -31,53 +31,44 @@
 html { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
 body { max-width: 480px; margin: 0 auto; padding: 0 0 80px; min-height: 100vh; }
 
-/* Header */
-.header { padding: 52px 20px 24px; }
+.header { padding: 48px 20px 20px; }
 .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
-.header h1 { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
-.total-display { font-family: 'DM Mono', monospace; font-size: 38px; font-weight: 300; letter-spacing: -.02em; color: var(--text); line-height: 1; }
-.total-label { font-size: 11px; color: var(--hint); margin-top: 6px; letter-spacing: .04em; }
-.refresh-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border2); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all .15s; }
-.refresh-btn:hover { background: var(--surface2); color: var(--text); }
+.header h1 { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
+.total-display { font-family: 'DM Mono', monospace; font-size: 36px; font-weight: 300; letter-spacing: -.02em; color: var(--text); line-height: 1; }
+.total-label { font-size: 11px; color: var(--hint); margin-top: 5px; }
+.delta { font-size: 12px; margin-top: 4px; font-family: 'DM Mono', monospace; }
+.delta.up { color: var(--red); }
+.delta.down { color: var(--green); }
+.refresh-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border2); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; }
 
-/* Metrics row */
-.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 20px 24px; }
-.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 12px; }
-.metric-card .label { font-size: 10px; color: var(--hint); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
-.metric-card .value { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 400; color: var(--text); }
+.metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 0 20px 20px; }
+.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; }
+.metric-card .label { font-size: 10px; color: var(--hint); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 5px; }
+.metric-card .value { font-family: 'DM Mono', monospace; font-size: 17px; font-weight: 400; color: var(--text); }
 .metric-card .sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.metric-card .sub.green { color: var(--green); }
+.metric-card .sub.red { color: var(--red); }
 
-/* Section */
-.section { padding: 0 20px; margin-bottom: 28px; }
-.section-title { font-size: 10px; color: var(--hint); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-
-/* Chart */
+.section { padding: 0 20px; margin-bottom: 24px; }
+.section-title { font-size: 10px; color: var(--hint); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
 .chart-container { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
-.chart-wrap { position: relative; height: 180px; }
-.legend-row { display: flex; gap: 14px; margin-bottom: 12px; }
+.chart-wrap { position: relative; }
+.legend-row { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
-.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 
-/* Account bars */
-.acct-list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-.acct-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); position: relative; }
-.acct-row:last-child { border-bottom: none; }
-.acct-bar-bg { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,255,255,0.025); border-radius: 0; pointer-events: none; }
-.acct-name { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); width: 80px; flex-shrink: 0; position: relative; z-index: 1; }
-.acct-amount { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-left: auto; position: relative; z-index: 1; }
-.acct-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; position: relative; z-index: 1; }
-
-/* Year tabs */
-.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 3px; margin-bottom: 12px; }
-.tab { flex: 1; text-align: center; padding: 6px 0; font-size: 12px; font-family: 'DM Mono', monospace; color: var(--muted); border-radius: 7px; cursor: pointer; transition: all .15s; }
+.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 3px; margin-bottom: 10px; }
+.tab { flex: 1; text-align: center; padding: 6px 0; font-size: 12px; font-family: 'DM Mono', monospace; color: var(--muted); border-radius: 7px; cursor: pointer; }
 .tab.active { background: var(--surface2); color: var(--text); }
 
-/* Ledger */
+.acct-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.pill { font-size: 11px; font-family: 'DM Mono', monospace; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border2); color: var(--muted); cursor: pointer; }
+.pill.active { border-color: rgba(0,0,0,0.25); color: var(--text); background: var(--surface2); }
+
 .ledger { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-.ledger-head { display: grid; grid-template-columns: 68px 1fr 76px; padding: 9px 14px; font-size: 10px; color: var(--hint); letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
-.ledger-row { display: grid; grid-template-columns: 68px 1fr 76px; padding: 10px 14px; border-bottom: 1px solid var(--border); align-items: center; transition: background .1s; }
+.ledger-head { display: grid; grid-template-columns: 68px 1fr 76px; padding: 9px 14px; font-size: 10px; color: var(--hint); letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.ledger-row { display: grid; grid-template-columns: 68px 1fr 76px; padding: 10px 14px; border-bottom: 1px solid var(--border); align-items: center; }
 .ledger-row:last-child { border-bottom: none; }
-.ledger-row:hover { background: var(--surface2); }
 .row-date { font-size: 10px; color: var(--hint); font-family: 'DM Mono', monospace; line-height: 1.5; }
 .row-desc { display: flex; flex-direction: column; gap: 2px; }
 .row-acct { font-size: 11px; font-family: 'DM Mono', monospace; }
@@ -85,151 +76,129 @@ body { max-width: 480px; margin: 0 auto; padding: 0 0 80px; min-height: 100vh; }
 .row-amt { text-align: right; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); }
 .savings-row .row-amt { color: var(--green); }
 
-/* Account filter pills */
-.acct-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-.pill { font-size: 11px; font-family: 'DM Mono', monospace; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border2); color: var(--muted); cursor: pointer; transition: all .12s; }
-.pill.active { border-color: rgba(255,255,255,0.25); color: var(--text); background: var(--surface2); }
+.acct-list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.acct-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); position: relative; }
+.acct-row:last-child { border-bottom: none; }
+.acct-bar-bg { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.03); pointer-events: none; }
+.acct-name { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); width: 80px; flex-shrink: 0; position: relative; z-index: 1; }
+.acct-amount { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-left: auto; position: relative; z-index: 1; }
+.acct-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; position: relative; z-index: 1; }
 
-/* Loading */
-.loading { text-align: center; padding: 60px 20px; font-size: 12px; color: var(--hint); font-family: 'DM Mono', monospace; letter-spacing: .08em; }
-.error-msg { background: rgba(224,92,92,0.1); border: 1px solid rgba(224,92,92,0.2); border-radius: 10px; padding: 14px 16px; margin: 0 20px; font-size: 12px; color: var(--red); }
-.error-msg a { color: var(--blue); }
+.loading { text-align: center; padding: 60px 20px; font-size: 12px; color: var(--hint); font-family: 'DM Mono', monospace; }
+.error-msg { background: rgba(224,92,92,0.08); border: 1px solid rgba(224,92,92,0.2); border-radius: 10px; padding: 14px 16px; margin: 0 20px; font-size: 12px; color: var(--red); }
 
-/* Bottom nav */
 .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(247,246,243,0.92); backdrop-filter: blur(20px); border-top: 1px solid var(--border); display: flex; padding: 8px 0 20px; }
-.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; cursor: pointer; color: var(--hint); transition: color .15s; font-size: 10px; letter-spacing: .04em; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; cursor: pointer; color: var(--hint); font-size: 10px; letter-spacing: .04em; }
 .nav-item.active { color: var(--text); }
 .nav-icon { font-size: 18px; line-height: 1; }
 </style>
 </head>
 <body>
-
-<div id="app">
-  <div class="loading" id="loadingMsg">loading data ...</div>
-</div>
-
+<div id="app"><div class="loading">loading ...</div></div>
 <nav class="nav">
-  <div class="nav-item active" onclick="showView('overview')" id="nav-overview">
-    <span class="nav-icon">◈</span>
-    <span>概览</span>
-  </div>
-  <div class="nav-item" onclick="showView('ledger')" id="nav-ledger">
-    <span class="nav-icon">≡</span>
-    <span>流水</span>
-  </div>
-  <div class="nav-item" onclick="showView('accounts')" id="nav-accounts">
-    <span class="nav-icon">◎</span>
-    <span>账户</span>
-  </div>
+  <div class="nav-item active" onclick="showView('overview')" id="nav-overview"><span class="nav-icon">◈</span><span>概览</span></div>
+  <div class="nav-item" onclick="showView('ledger')" id="nav-ledger"><span class="nav-icon">≡</span><span>流水</span></div>
+  <div class="nav-item" onclick="showView('accounts')" id="nav-accounts"><span class="nav-icon">◎</span><span>账户</span></div>
 </nav>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────────────
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP9435oq8YLueHUriwI_siWq0L3-GXWZNtgmL4zc9zHY1S9uLywjbv0XabimiTihT9_lyAS6dYdqK6/pub?output=csv';
 
-// ── COLORS ──────────────────────────────────────────────────────────────
 const COLORS = {
   freedom:'#5b9cf6', bilt:'#56c27a', uar:'#f0a946', hood:'#d47ab0',
   apple:'#888580', discover:'#9e7fe8', amex:'#3dbf8a', car:'#4aad6b',
   房租:'#e05c5c', hermes:'#f0a946', coin:'#e05c5c', boa:'#5b9cf6',
   savings:'#56c27a', travel:'#9e7fe8', personal:'#f0a946',
-  car_insurance:'#666', medical:'#e05c5c', camera:'#f0a946',
-  taxes:'#9e7fe8', repair:'#888', usbank:'#5b9cf6',
-  chase:'#56c27a', dmv:'#888', aeroplan:'#3dbf8a', other:'#555'
+  car_insurance:'#aaa8a4', medical:'#e05c5c', camera:'#f0a946',
+  taxes:'#9e7fe8', repair:'#aaa8a4', usbank:'#5b9cf6',
+  chase:'#56c27a', dmv:'#aaa8a4', aeroplan:'#3dbf8a', other:'#aaa8a4'
 };
+const YEAR_COLORS = { '2024':'#5b9cf6', '2025':'#d47ab0', '2026':'#56c27a' };
 const getColor = a => COLORS[a] || COLORS.other;
+const fmt = v => '$' + Math.round(v).toLocaleString();
+const fmtD = v => '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-// ── STATE ────────────────────────────────────────────────────────────────
 let allData = [];
 let currentView = 'overview';
 let selYear = '2026';
 let selAcct = 'all';
-let trendChart = null;
+let charts = {};
 
-// ── PARSE CSV ────────────────────────────────────────────────────────────
 function parseCSV(text) {
   const lines = text.trim().split('\n');
-  const headers = lines[0].split(',');
   return lines.slice(1).map(line => {
     const vals = line.split(',');
-    return {
-      year: vals[0], month: vals[1], period: vals[2],
-      account: vals[3], description: vals[4],
-      amount: parseFloat(vals[5]), status: vals[6], type: vals[7]
-    };
-  }).filter(r => r.amount > 0);
+    return { year:vals[0], month:vals[1], period:vals[2], account:vals[3], description:vals[4], amount:parseFloat(vals[5]), status:vals[6], type:vals[7]?.trim() };
+  }).filter(r => r.amount > 0 && r.year);
 }
 
-// ── LOAD DATA ────────────────────────────────────────────────────────────
 async function loadData() {
-  document.getElementById('app').innerHTML = '<div class="loading" id="loadingMsg">loading ...</div>';
+  document.getElementById('app').innerHTML = '<div class="loading">loading ...</div>';
   try {
     const res = await fetch(CSV_URL);
-    if (!res.ok) throw new Error('fetch failed');
+    if (!res.ok) throw new Error();
     allData = parseCSV(await res.text());
     render();
   } catch(e) {
-    document.getElementById('app').innerHTML = `
-      <div style="padding:20px">
-        <div class="error-msg">
-          无法加载数据，请检查网络或 Sheets 发布设置。<br>
-          <a href="${CSV_URL}" target="_blank">手动检查链接</a>
-        </div>
-      </div>`;
+    document.getElementById('app').innerHTML = `<div style="padding:20px"><div class="error-msg">无法加载数据，请检查网络连接。</div></div>`;
   }
 }
 
-// ── AGGREGATES ───────────────────────────────────────────────────────────
 function getMonthKey(r) { return `${r.year}-${r.month.padStart(2,'0')}`; }
 
-function monthlyTotals(data, type) {
-  const map = {};
-  data.filter(r => r.type === type).forEach(r => {
-    const k = getMonthKey(r);
-    map[k] = (map[k] || 0) + r.amount;
-  });
-  return map;
-}
-
-function acctTotals(data) {
-  const map = {};
-  data.filter(r => r.type === 'expense').forEach(r => {
-    map[r.account] = (map[r.account] || 0) + r.amount;
-  });
-  return Object.entries(map).sort((a,b) => b[1]-a[1]);
-}
-
-// ── FORMAT ───────────────────────────────────────────────────────────────
-const fmt = v => '$' + Math.round(v).toLocaleString();
-const fmtD = v => '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-// ── VIEWS ────────────────────────────────────────────────────────────────
-function showView(view) {
-  currentView = view;
-  ['overview','ledger','accounts'].forEach(v => {
-    document.getElementById(`nav-${v}`).classList.toggle('active', v === view);
-  });
+function showView(v) {
+  currentView = v;
+  ['overview','ledger','accounts'].forEach(x => document.getElementById(`nav-${x}`).classList.toggle('active', x===v));
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
   render();
 }
 
 function render() {
-  document.getElementById('loadingMsg')?.remove();
   if (currentView === 'overview') renderOverview();
   else if (currentView === 'ledger') renderLedger();
   else renderAccounts();
 }
 
 function renderOverview() {
-  const expenses = allData.filter(r => r.type === 'expense');
-  const expMap = monthlyTotals(allData, 'expense');
-  const savMap = monthlyTotals(allData, 'savings');
-  const months = [...new Set([...Object.keys(expMap), ...Object.keys(savMap)])].sort();
-  const expVals = Object.values(expMap);
-  const totalExp = expVals.reduce((a,b)=>a+b,0);
-  const avgExp = totalExp / expVals.length;
-  const totalSav = Object.values(savMap).reduce((a,b)=>a+b,0);
-  const maxVal = Math.max(...expVals);
-  const maxKey = Object.keys(expMap).find(k => expMap[k] === maxVal) || '';
+  const now = new Date();
+  const cy = String(now.getFullYear());
+  const cm = String(now.getMonth() + 1);
+  const pm = String(now.getMonth() === 0 ? 12 : now.getMonth());
+  const py = now.getMonth() === 0 ? String(now.getFullYear()-1) : cy;
+
+  const expenses = allData.filter(r => r.type==='expense');
+
+  // MTD
+  const mtd = expenses.filter(r => r.year===cy && r.month===cm).reduce((s,r)=>s+r.amount,0);
+  // Last month
+  const lm = expenses.filter(r => r.year===py && r.month===pm).reduce((s,r)=>s+r.amount,0);
+  const delta = lm > 0 ? ((mtd - lm) / lm * 100) : 0;
+  const deltaStr = (delta >= 0 ? '+' : '') + delta.toFixed(0) + '% vs 上月';
+
+  // YTD
+  const ytd = expenses.filter(r => r.year===cy).reduce((s,r)=>s+r.amount,0);
+
+  // Monthly avg last 12 months
+  const monthMap = {};
+  expenses.forEach(r => { const k=getMonthKey(r); monthMap[k]=(monthMap[k]||0)+r.amount; });
+  const allMonths = Object.keys(monthMap).sort();
+  const last12 = allMonths.slice(-12);
+  const avg12 = last12.reduce((s,k)=>s+(monthMap[k]||0),0) / (last12.length||1);
+
+  // YTD savings
+  const ytdSav = allData.filter(r=>r.type==='savings'&&r.year===cy).reduce((s,r)=>s+r.amount,0);
+
+  // Year-over-year monthly data (all months Jan-Dec, by year)
+  const years = ['2024','2025','2026'];
+  const monthNums = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+  const yoyData = {};
+  years.forEach(y => { yoyData[y] = monthNums.map(m => Math.round(monthMap[`${y}-${m}`]||0)); });
+
+  // Category breakdown YTD
+  const catMap = {};
+  expenses.filter(r=>r.year===cy).forEach(r=>{ catMap[r.account]=(catMap[r.account]||0)+r.amount; });
+  const topCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
 
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -237,94 +206,118 @@ function renderOverview() {
       <div class="header-top">
         <div>
           <h1>slim / 记账</h1>
-          <div class="total-display">${fmt(totalExp)}</div>
-          <div class="total-label">总支出 · 2024–2026</div>
+          <div class="total-display">${fmt(mtd)}</div>
+          <div class="total-label">本月支出 MTD · ${cy}/${cm.padStart(2,'0')}</div>
+          <div class="delta ${delta>=0?'up':'down'}">${deltaStr}</div>
         </div>
-        <button class="refresh-btn" onclick="loadData()" title="刷新">↻</button>
+        <button class="refresh-btn" onclick="loadData()">↻</button>
       </div>
     </div>
 
     <div class="metrics">
       <div class="metric-card">
-        <div class="label">月均</div>
-        <div class="value">${fmt(avgExp)}</div>
-        <div class="sub">${expVals.length} 个月</div>
+        <div class="label">YTD ${cy}</div>
+        <div class="value">${fmt(ytd)}</div>
+        <div class="sub">${now.getMonth()+1} 个月</div>
       </div>
       <div class="metric-card">
-        <div class="label">储蓄</div>
-        <div class="value" style="color:var(--green)">${fmt(totalSav)}</div>
-        <div class="sub">已记录</div>
+        <div class="label">月均（近12月）</div>
+        <div class="value">${fmt(avg12)}</div>
+        <div class="sub">滚动平均</div>
       </div>
       <div class="metric-card">
-        <div class="label">最高月</div>
-        <div class="value">${fmt(maxVal)}</div>
-        <div class="sub">${maxKey}</div>
+        <div class="label">上月支出</div>
+        <div class="value">${fmt(lm)}</div>
+        <div class="sub">${py}/${pm.padStart(2,'0')}</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">YTD 储蓄</div>
+        <div class="value" style="color:var(--green)">${fmt(ytdSav)}</div>
+        <div class="sub ${ytdSav>0?'green':''}">已记录部分</div>
       </div>
     </div>
 
     <div class="section">
-      <div class="section-title">月度趋势</div>
+      <div class="section-title">跨年月度对比</div>
       <div class="chart-container">
         <div class="legend-row">
-          <div class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>支出</div>
-          <div class="legend-item"><span class="legend-dot" style="background:var(--green);opacity:.6"></span>储蓄</div>
+          ${years.map(y=>`<div class="legend-item"><span class="legend-dot" style="background:${YEAR_COLORS[y]}"></span>${y}</div>`).join('')}
         </div>
-        <div class="chart-wrap"><canvas id="trendChart" role="img" aria-label="月度趋势图"></canvas></div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="yoyChart" role="img" aria-label="跨年月度支出对比"></canvas>
+        </div>
       </div>
     </div>
 
     <div class="section">
-      <div class="section-title">最近账单</div>
-      <div class="ledger" id="recentLedger"></div>
+      <div class="section-title">YTD 支出构成 · ${cy}</div>
+      <div class="chart-container">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center">
+          <div class="chart-wrap" style="height:160px">
+            <canvas id="pieChart" role="img" aria-label="YTD账户分布饼图"></canvas>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${topCats.map(([a,v])=>`
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="width:7px;height:7px;border-radius:50%;background:${getColor(a)};flex-shrink:0"></span>
+                <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;flex:1">${a}</span>
+                <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text)">${fmt(v)}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
     </div>
   `;
 
-  // Recent rows
-  const recent = allData.filter(r => r.type === 'expense').slice(-12).reverse();
-  const lb = document.getElementById('recentLedger');
-  recent.forEach(r => {
-    const c = getColor(r.account);
-    lb.innerHTML += `<div class="ledger-row">
-      <div class="row-date">${r.year}/${r.month.padStart(2,'0')}<br>${r.period}</div>
-      <div class="row-desc"><span class="row-acct" style="color:${c}">${r.account}</span><span class="row-note">${r.description}</span></div>
-      <div class="row-amt">${fmtD(r.amount)}</div>
-    </div>`;
-  });
-
-  // Chart
-  if (trendChart) { trendChart.destroy(); trendChart = null; }
-  trendChart = new Chart(document.getElementById('trendChart'), {
-    type: 'line',
+  // YoY chart
+  charts.yoy = new Chart(document.getElementById('yoyChart'), {
+    type: 'bar',
     data: {
-      labels: months.map(m => { const [y,mo]=m.split('-'); return `${y.slice(2)}/${mo}`; }),
-      datasets: [
-        { data: months.map(m => Math.round(expMap[m]||0)), borderColor:'#5b9cf6', backgroundColor:'rgba(91,156,246,0.07)', tension:.35, fill:true, pointRadius:2.5, pointBackgroundColor:'#5b9cf6', borderWidth:1.5 },
-        { data: months.map(m => Math.round(savMap[m]||0)), borderColor:'rgba(86,194,122,0.5)', backgroundColor:'rgba(86,194,122,0.04)', tension:.35, fill:true, pointRadius:2, pointBackgroundColor:'rgba(86,194,122,0.5)', borderWidth:1, borderDash:[4,3] }
-      ]
+      labels: ['1','2','3','4','5','6','7','8','9','10','11','12'],
+      datasets: years.map(y => ({
+        label: y,
+        data: yoyData[y],
+        backgroundColor: YEAR_COLORS[y] + (y===cy ? 'dd' : '55'),
+        borderRadius: 3,
+        borderSkipped: false,
+      }))
     },
     options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false} },
-      scales:{
-        x:{ ticks:{color:'#555',font:{size:9},maxRotation:45}, grid:{display:false}, border:{display:false} },
-        y:{ ticks:{color:'#555',font:{size:9},callback:v=>'$'+v.toLocaleString()}, grid:{color:'rgba(0,0,0,0.04)'}, border:{display:false} }
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks:{color:'#aaa',font:{size:9}}, grid:{display:false}, border:{display:false} },
+        y: { ticks:{color:'#aaa',font:{size:9},callback:v=>'$'+v.toLocaleString()}, grid:{color:'rgba(0,0,0,0.04)'}, border:{display:false} }
       }
+    }
+  });
+
+  // Pie chart
+  charts.pie = new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: topCats.map(([a])=>a),
+      datasets: [{ data: topCats.map(([,v])=>Math.round(v)), backgroundColor: topCats.map(([a])=>getColor(a)), borderWidth: 0, hoverOffset: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      cutout: '65%'
     }
   });
 }
 
 function renderLedger() {
   const filtered = allData.filter(r => {
-    if (selYear !== 'all' && r.year !== selYear) return false;
-    if (selAcct !== 'all' && r.account !== selAcct) return false;
+    if (selYear!=='all' && r.year!==selYear) return false;
+    if (selAcct!=='all' && r.account!==selAcct) return false;
     return true;
   }).slice().reverse();
 
-  const years = ['all','2026','2025','2024'];
+  const years = ['2026','2025','2024','all'];
   const pinnedAccts = ['all','hood','boa','coin','chase','discover','apple','房租','car','freedom'];
 
-  const app = document.getElementById('app');
-  app.innerHTML = `
+  document.getElementById('app').innerHTML = `
     <div class="header"><h1>流水明细</h1></div>
     <div class="section">
       <div class="tabs">
@@ -335,9 +328,9 @@ function renderLedger() {
       </div>
       <div class="ledger">
         <div class="ledger-head"><div>时间</div><div>账户 · 描述</div><div style="text-align:right">金额</div></div>
-        ${filtered.map(r => {
-          const c = getColor(r.account);
-          const isSav = r.type==='savings';
+        ${filtered.map(r=>{
+          const c=getColor(r.account);
+          const isSav=r.type==='savings';
           return `<div class="ledger-row ${isSav?'savings-row':''}">
             <div class="row-date">${r.year}/${r.month.padStart(2,'0')}<br>${r.period}</div>
             <div class="row-desc"><span class="row-acct" style="color:${c}">${r.account}</span><span class="row-note">${r.description}</span></div>
@@ -345,34 +338,41 @@ function renderLedger() {
           </div>`;
         }).join('')}
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderAccounts() {
-  const totals = acctTotals(allData);
-  const maxAmt = totals[0]?.[1] || 1;
+  const totals = {};
+  allData.filter(r=>r.type==='expense').forEach(r=>{ totals[r.account]=(totals[r.account]||0)+r.amount; });
+  const sorted = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const maxAmt = sorted[0]?.[1]||1;
 
-  const app = document.getElementById('app');
-  app.innerHTML = `
+  // Also show YTD breakdown
+  const now = new Date();
+  const cy = String(now.getFullYear());
+  const ytdTotals = {};
+  allData.filter(r=>r.type==='expense'&&r.year===cy).forEach(r=>{ ytdTotals[r.account]=(ytdTotals[r.account]||0)+r.amount; });
+
+  document.getElementById('app').innerHTML = `
     <div class="header"><h1>账户分布</h1></div>
     <div class="section">
+      <div class="section-title">历史总计</div>
       <div class="acct-list">
-        ${totals.map(([acct, amt]) => {
-          const c = getColor(acct);
-          const pct = (amt / maxAmt * 100).toFixed(1);
+        ${sorted.map(([acct,amt])=>{
+          const c=getColor(acct);
+          const pct=(amt/maxAmt*100).toFixed(1);
+          const ytd=ytdTotals[acct]||0;
           return `<div class="acct-row">
             <div class="acct-bar-bg" style="width:${pct}%"></div>
             <span class="acct-dot" style="background:${c}"></span>
             <span class="acct-name">${acct}</span>
+            ${ytd>0?`<span style="font-size:10px;color:var(--hint);font-family:'DM Mono',monospace;position:relative;z-index:1">YTD ${fmt(ytd)}</span>`:''}
             <span class="acct-amount">${fmt(amt)}</span>
           </div>`;
         }).join('')}
       </div>
-    </div>
-  `;
+    </div>`;
 }
-
 
 loadData();
 </script>
