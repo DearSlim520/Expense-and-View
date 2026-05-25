@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="记账">
+<title>Slim 记账</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #0e0e0f;
+  --surface: #18181a;
+  --surface2: #212123;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0ede8;
+  --muted: #888580;
+  --hint: #555350;
+  --blue: #5b9cf6;
+  --green: #56c27a;
+  --amber: #f0a946;
+  --red: #e05c5c;
+  --pink: #d47ab0;
+  --purple: #9e7fe8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
+body { max-width: 480px; margin: 0 auto; padding: 0 0 80px; min-height: 100vh; }
+
+/* Header */
+.header { padding: 52px 20px 24px; }
+.header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.header h1 { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
+.total-display { font-family: 'DM Mono', monospace; font-size: 38px; font-weight: 300; letter-spacing: -.02em; color: var(--text); line-height: 1; }
+.total-label { font-size: 11px; color: var(--hint); margin-top: 6px; letter-spacing: .04em; }
+.refresh-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border2); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all .15s; }
+.refresh-btn:hover { background: var(--surface2); color: var(--text); }
+
+/* Metrics row */
+.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 20px 24px; }
+.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 12px; }
+.metric-card .label { font-size: 10px; color: var(--hint); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+.metric-card .value { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 400; color: var(--text); }
+.metric-card .sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+/* Section */
+.section { padding: 0 20px; margin-bottom: 28px; }
+.section-title { font-size: 10px; color: var(--hint); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+/* Chart */
+.chart-container { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+.chart-wrap { position: relative; height: 180px; }
+.legend-row { display: flex; gap: 14px; margin-bottom: 12px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+/* Account bars */
+.acct-list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.acct-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); position: relative; }
+.acct-row:last-child { border-bottom: none; }
+.acct-bar-bg { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,255,255,0.025); border-radius: 0; pointer-events: none; }
+.acct-name { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); width: 80px; flex-shrink: 0; position: relative; z-index: 1; }
+.acct-amount { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-left: auto; position: relative; z-index: 1; }
+.acct-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; position: relative; z-index: 1; }
+
+/* Year tabs */
+.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 3px; margin-bottom: 12px; }
+.tab { flex: 1; text-align: center; padding: 6px 0; font-size: 12px; font-family: 'DM Mono', monospace; color: var(--muted); border-radius: 7px; cursor: pointer; transition: all .15s; }
+.tab.active { background: var(--surface2); color: var(--text); }
+
+/* Ledger */
+.ledger { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.ledger-head { display: grid; grid-template-columns: 68px 1fr 76px; padding: 9px 14px; font-size: 10px; color: var(--hint); letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.ledger-row { display: grid; grid-template-columns: 68px 1fr 76px; padding: 10px 14px; border-bottom: 1px solid var(--border); align-items: center; transition: background .1s; }
+.ledger-row:last-child { border-bottom: none; }
+.ledger-row:hover { background: var(--surface2); }
+.row-date { font-size: 10px; color: var(--hint); font-family: 'DM Mono', monospace; line-height: 1.5; }
+.row-desc { display: flex; flex-direction: column; gap: 2px; }
+.row-acct { font-size: 11px; font-family: 'DM Mono', monospace; }
+.row-note { font-size: 11px; color: var(--muted); }
+.row-amt { text-align: right; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); }
+.savings-row .row-amt { color: var(--green); }
+
+/* Account filter pills */
+.acct-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.pill { font-size: 11px; font-family: 'DM Mono', monospace; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border2); color: var(--muted); cursor: pointer; transition: all .12s; }
+.pill.active { border-color: rgba(255,255,255,0.25); color: var(--text); background: var(--surface2); }
+
+/* Loading */
+.loading { text-align: center; padding: 60px 20px; font-size: 12px; color: var(--hint); font-family: 'DM Mono', monospace; letter-spacing: .08em; }
+.error-msg { background: rgba(224,92,92,0.1); border: 1px solid rgba(224,92,92,0.2); border-radius: 10px; padding: 14px 16px; margin: 0 20px; font-size: 12px; color: var(--red); }
+.error-msg a { color: var(--blue); }
+
+/* Bottom nav */
+.nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(14,14,15,0.92); backdrop-filter: blur(20px); border-top: 1px solid var(--border); display: flex; padding: 8px 0 20px; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; cursor: pointer; color: var(--hint); transition: color .15s; font-size: 10px; letter-spacing: .04em; }
+.nav-item.active { color: var(--text); }
+.nav-icon { font-size: 18px; line-height: 1; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="loading" id="loadingMsg">loading data ...</div>
+</div>
+
+<nav class="nav">
+  <div class="nav-item active" onclick="showView('overview')" id="nav-overview">
+    <span class="nav-icon">◈</span>
+    <span>概览</span>
+  </div>
+  <div class="nav-item" onclick="showView('ledger')" id="nav-ledger">
+    <span class="nav-icon">≡</span>
+    <span>流水</span>
+  </div>
+  <div class="nav-item" onclick="showView('accounts')" id="nav-accounts">
+    <span class="nav-icon">◎</span>
+    <span>账户</span>
+  </div>
+</nav>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────
+// Replace SHEET_ID with your Google Sheets ID after publishing to web
+const SHEET_ID = 'YOUR_SHEET_ID_HERE';
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+
+// ── COLORS ──────────────────────────────────────────────────────────────
+const COLORS = {
+  freedom:'#5b9cf6', bilt:'#56c27a', uar:'#f0a946', hood:'#d47ab0',
+  apple:'#888580', discover:'#9e7fe8', amex:'#3dbf8a', car:'#4aad6b',
+  房租:'#e05c5c', hermes:'#f0a946', coin:'#e05c5c', boa:'#5b9cf6',
+  savings:'#56c27a', travel:'#9e7fe8', personal:'#f0a946',
+  car_insurance:'#666', medical:'#e05c5c', camera:'#f0a946',
+  taxes:'#9e7fe8', repair:'#888', usbank:'#5b9cf6',
+  chase:'#56c27a', dmv:'#888', aeroplan:'#3dbf8a', other:'#555'
+};
+const getColor = a => COLORS[a] || COLORS.other;
+
+// ── STATE ────────────────────────────────────────────────────────────────
+let allData = [];
+let currentView = 'overview';
+let selYear = 'all';
+let selAcct = 'all';
+let trendChart = null;
+
+// ── PARSE CSV ────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    return {
+      year: vals[0], month: vals[1], period: vals[2],
+      account: vals[3], description: vals[4],
+      amount: parseFloat(vals[5]), status: vals[6], type: vals[7]
+    };
+  }).filter(r => r.amount > 0);
+}
+
+// ── LOAD DATA ────────────────────────────────────────────────────────────
+async function loadData() {
+  // Try Google Sheets first
+  if (SHEET_ID !== 'YOUR_SHEET_ID_HERE') {
+    try {
+      const res = await fetch(CSV_URL);
+      if (res.ok) {
+        allData = parseCSV(await res.text());
+        render();
+        return;
+      }
+    } catch(e) {}
+  }
+  // Fallback: embedded data
+  allData = EMBEDDED_DATA;
+  render();
+}
+
+// ── AGGREGATES ───────────────────────────────────────────────────────────
+function getMonthKey(r) { return `${r.year}-${r.month.padStart(2,'0')}`; }
+
+function monthlyTotals(data, type) {
+  const map = {};
+  data.filter(r => r.type === type).forEach(r => {
+    const k = getMonthKey(r);
+    map[k] = (map[k] || 0) + r.amount;
+  });
+  return map;
+}
+
+function acctTotals(data) {
+  const map = {};
+  data.filter(r => r.type === 'expense').forEach(r => {
+    map[r.account] = (map[r.account] || 0) + r.amount;
+  });
+  return Object.entries(map).sort((a,b) => b[1]-a[1]);
+}
+
+// ── FORMAT ───────────────────────────────────────────────────────────────
+const fmt = v => '$' + Math.round(v).toLocaleString();
+const fmtD = v => '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+// ── VIEWS ────────────────────────────────────────────────────────────────
+function showView(view) {
+  currentView = view;
+  ['overview','ledger','accounts'].forEach(v => {
+    document.getElementById(`nav-${v}`).classList.toggle('active', v === view);
+  });
+  render();
+}
+
+function render() {
+  document.getElementById('loadingMsg')?.remove();
+  if (currentView === 'overview') renderOverview();
+  else if (currentView === 'ledger') renderLedger();
+  else renderAccounts();
+}
+
+function renderOverview() {
+  const expenses = allData.filter(r => r.type === 'expense');
+  const expMap = monthlyTotals(allData, 'expense');
+  const savMap = monthlyTotals(allData, 'savings');
+  const months = [...new Set([...Object.keys(expMap), ...Object.keys(savMap)])].sort();
+  const expVals = Object.values(expMap);
+  const totalExp = expVals.reduce((a,b)=>a+b,0);
+  const avgExp = totalExp / expVals.length;
+  const totalSav = Object.values(savMap).reduce((a,b)=>a+b,0);
+  const maxVal = Math.max(...expVals);
+  const maxKey = Object.keys(expMap).find(k => expMap[k] === maxVal) || '';
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <h1>slim / 记账</h1>
+          <div class="total-display">${fmt(totalExp)}</div>
+          <div class="total-label">总支出 · 2024–2026</div>
+        </div>
+        <button class="refresh-btn" onclick="loadData()" title="刷新">↻</button>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="label">月均</div>
+        <div class="value">${fmt(avgExp)}</div>
+        <div class="sub">${expVals.length} 个月</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">储蓄</div>
+        <div class="value" style="color:var(--green)">${fmt(totalSav)}</div>
+        <div class="sub">已记录</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">最高月</div>
+        <div class="value">${fmt(maxVal)}</div>
+        <div class="sub">${maxKey}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">月度趋势</div>
+      <div class="chart-container">
+        <div class="legend-row">
+          <div class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>支出</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--green);opacity:.6"></span>储蓄</div>
+        </div>
+        <div class="chart-wrap"><canvas id="trendChart" role="img" aria-label="月度趋势图"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">最近账单</div>
+      <div class="ledger" id="recentLedger"></div>
+    </div>
+  `;
+
+  // Recent rows
+  const recent = allData.filter(r => r.type === 'expense').slice(-12).reverse();
+  const lb = document.getElementById('recentLedger');
+  recent.forEach(r => {
+    const c = getColor(r.account);
+    lb.innerHTML += `<div class="ledger-row">
+      <div class="row-date">${r.year}/${r.month.padStart(2,'0')}<br>${r.period}</div>
+      <div class="row-desc"><span class="row-acct" style="color:${c}">${r.account}</span><span class="row-note">${r.description}</span></div>
+      <div class="row-amt">${fmtD(r.amount)}</div>
+    </div>`;
+  });
+
+  // Chart
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: months.map(m => { const [y,mo]=m.split('-'); return `${y.slice(2)}/${mo}`; }),
+      datasets: [
+        { data: months.map(m => Math.round(expMap[m]||0)), borderColor:'#5b9cf6', backgroundColor:'rgba(91,156,246,0.07)', tension:.35, fill:true, pointRadius:2.5, pointBackgroundColor:'#5b9cf6', borderWidth:1.5 },
+        { data: months.map(m => Math.round(savMap[m]||0)), borderColor:'rgba(86,194,122,0.5)', backgroundColor:'rgba(86,194,122,0.04)', tension:.35, fill:true, pointRadius:2, pointBackgroundColor:'rgba(86,194,122,0.5)', borderWidth:1, borderDash:[4,3] }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ ticks:{color:'#555',font:{size:9},maxRotation:45}, grid:{display:false}, border:{display:false} },
+        y:{ ticks:{color:'#555',font:{size:9},callback:v=>'$'+v.toLocaleString()}, grid:{color:'rgba(255,255,255,0.04)'}, border:{display:false} }
+      }
+    }
+  });
+}
+
+function renderLedger() {
+  const filtered = allData.filter(r => {
+    if (selYear !== 'all' && r.year !== selYear) return false;
+    if (selAcct !== 'all' && r.account !== selAcct) return false;
+    return true;
+  }).slice().reverse();
+
+  const years = ['all','2024','2025','2026'];
+  const accounts = ['all',...new Set(allData.map(r=>r.account))].sort();
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="header"><h1>流水明细</h1></div>
+    <div class="section">
+      <div class="tabs">
+        ${years.map(y=>`<div class="tab ${selYear===y?'active':''}" onclick="selYear='${y}';renderLedger()">${y==='all'?'全部':y}</div>`).join('')}
+      </div>
+      <div class="acct-pills">
+        ${accounts.slice(0,12).map(a=>`<span class="pill ${selAcct===a?'active':''}" onclick="selAcct='${a}';renderLedger()">${a==='all'?'全部':a}</span>`).join('')}
+      </div>
+      <div class="ledger">
+        <div class="ledger-head"><div>时间</div><div>账户 · 描述</div><div style="text-align:right">金额</div></div>
+        ${filtered.map(r => {
+          const c = getColor(r.account);
+          const isSav = r.type==='savings';
+          return `<div class="ledger-row ${isSav?'savings-row':''}">
+            <div class="row-date">${r.year}/${r.month.padStart(2,'0')}<br>${r.period}</div>
+            <div class="row-desc"><span class="row-acct" style="color:${c}">${r.account}</span><span class="row-note">${r.description}</span></div>
+            <div class="row-amt">${isSav?'+':''}${fmtD(r.amount)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderAccounts() {
+  const totals = acctTotals(allData);
+  const maxAmt = totals[0]?.[1] || 1;
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="header"><h1>账户分布</h1></div>
+    <div class="section">
+      <div class="acct-list">
+        ${totals.map(([acct, amt]) => {
+          const c = getColor(acct);
+          const pct = (amt / maxAmt * 100).toFixed(1);
+          return `<div class="acct-row">
+            <div class="acct-bar-bg" style="width:${pct}%"></div>
+            <span class="acct-dot" style="background:${c}"></span>
+            <span class="acct-name">${acct}</span>
+            <span class="acct-amount">${fmt(amt)}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ── EMBEDDED FALLBACK DATA ────────────────────────────────────────────────
+const EMBEDDED_DATA = [
+  {year:"2024",month:"5",period:"上旬",account:"freedom",description:"分期还款H2",amount:1330,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"上旬",account:"bilt",description:"上月欠款",amount:70,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"上旬",account:"savings",description:"存款",amount:2600,status:"paid",type:"savings"},
+  {year:"2024",month:"5",period:"上旬",account:"savings",description:"存款",amount:1300,status:"paid",type:"savings"},
+  {year:"2024",month:"5",period:"中旬",account:"bilt",description:"账单",amount:67.03,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"中旬",account:"apple",description:"账单",amount:62.41,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"中旬",account:"aeroplan",description:"账单",amount:20.45,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"中旬",account:"freedom",description:"账单(车险+H+其他)",amount:3188.1,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"中旬",account:"savings",description:"存款",amount:2540,status:"paid",type:"savings"},
+  {year:"2024",month:"5",period:"下旬",account:"房租",description:"房租",amount:1853.62,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"下旬",account:"car",description:"上月车贷",amount:757.6,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"下旬",account:"car",description:"本月车贷",amount:757.6,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"下旬",account:"bilt",description:"账单",amount:67.03,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"下旬",account:"amex",description:"账单",amount:44.4,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"下旬",account:"apple",description:"账单",amount:62.41,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"下旬",account:"aeroplan",description:"账单",amount:7.75,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"下旬",account:"freedom",description:"账单(H+车险+牙+开销)",amount:5010.95,status:"paid",type:"expense"},
+  {year:"2024",month:"5",period:"下旬",account:"savings",description:"从saving转还freedom",amount:3820,status:"paid",type:"savings"},
+  {year:"2024",month:"6",period:"中旬",account:"hermes",description:"H分期",amount:427.61,status:"paid",type:"expense"},
+  {year:"2024",month:"6",period:"中旬",account:"discover",description:"账单",amount:63.69,status:"paid",type:"expense"},
+  {year:"2024",month:"6",period:"中旬",account:"personal",description:"借米思琦jellycat",amount:212,status:"paid",type:"expense"},
+  {year:"2024",month:"6",period:"中旬",account:"car_insurance",description:"车险",amount:200,status:"paid",type:"expense"},
+  {year:"2024",month:"6",period:"中旬",account:"amex",description:"账单",amount:64.12,status:"paid",type:"expense"},
+  {year:"2024",month:"6",period:"中旬",account:"apple",description:"账单",amount:62.41,status:"paid",type:"expense"},
+  {year:"2024",month:"6",period:"中旬",account:"freedom",description:"还款",amount:50,status:"paid",type:"expense"},
+  {year:"2024",month:"6",period:"中旬",account:"savings",description:"存款",amount:2700,status:"paid",type:"savings"},
+  {year:"2024",month:"6",period:"下旬",account:"car",description:"车贷",amount:757.6,status:"paid",type:"expense"},
+  {year:"2024",month:"6",period:"下旬",account:"amex",description:"账单",amount:37.42,status:"paid",type:"expense"},
+  {year:"2024",month:"6",period:"下旬",account:"freedom",description:"账单",amount:922.18,status:"paid",type:"expense"},
+  {year:"2024",month:"7",period:"中旬",account:"hermes",description:"H分期",amount:427.61,status:"paid",type:"expense"},
+  {year:"2024",month:"7",period:"中旬",account:"car_insurance",description:"车险",amount:150,status:"paid",type:"expense"},
+  {year:"2024",month:"7",period:"中旬",account:"freedom",description:"账单",amount:523.55,status:"paid",type:"expense"},
+  {year:"2024",month:"7",period:"中旬",account:"savings",description:"存款",amount:900,status:"paid",type:"savings"},
+  {year:"2024",month:"8",period:"上旬",account:"apple",description:"账单",amount:62.41,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"上旬",account:"car",description:"车贷",amount:757.6,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"上旬",account:"房租",description:"房租",amount:1859.03,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"上旬",account:"chase",description:"账单",amount:378.21,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"上旬",account:"medical",description:"药",amount:154.44,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"上旬",account:"discover",description:"账单",amount:19.98,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"中旬",account:"hermes",description:"H分期",amount:427.35,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"中旬",account:"car_insurance",description:"车险",amount:150,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"中旬",account:"freedom",description:"账单",amount:122.65,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"中旬",account:"savings",description:"存款",amount:3000,status:"paid",type:"savings"},
+  {year:"2024",month:"8",period:"下旬",account:"discover",description:"账单",amount:12.82,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"下旬",account:"apple",description:"账单",amount:62.41,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"下旬",account:"amex",description:"账单",amount:32.96,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"下旬",account:"bilt",description:"账单",amount:92.26,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"下旬",account:"aeroplan",description:"账单(已销卡)",amount:195.75,status:"paid",type:"expense"},
+  {year:"2024",month:"8",period:"下旬",account:"car",description:"车贷",amount:757.6,status:"paid",type:"expense"},
+  {year:"2024",month:"9",period:"中旬",account:"bilt",description:"账单",amount:160.85,status:"paid",type:"expense"},
+  {year:"2024",month:"9",period:"中旬",account:"uar",description:"账单",amount:563.84,status:"paid",type:"expense"},
+  {year:"2024",month:"9",period:"中旬",account:"savings",description:"存款",amount:2400,status:"paid",type:"savings"},
+  {year:"2024",month:"10",period:"上旬",account:"apple",description:"账单(还清)",amount:82.7,status:"paid",type:"expense"},
+  {year:"2024",month:"10",period:"上旬",account:"car",description:"车贷",amount:757.6,status:"paid",type:"expense"},
+  {year:"2024",month:"10",period:"上旬",account:"uar",description:"账单",amount:2356.16,status:"paid",type:"expense"},
+  {year:"2024",month:"10",period:"上旬",account:"房租",description:"房租",amount:1859.73,status:"paid",type:"expense"},
+  {year:"2024",month:"10",period:"上旬",account:"camera",description:"相机",amount:7400,status:"paid",type:"expense"},
+  {year:"2024",month:"10",period:"中旬",account:"dmv",description:"renew车牌",amount:415.25,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"上旬",account:"房租",description:"房租",amount:1882.88,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"上旬",account:"car",description:"车贷",amount:757.6,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"上旬",account:"freedom",description:"账单",amount:380,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"上旬",account:"bilt",description:"账单",amount:72.98,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"上旬",account:"discover",description:"账单",amount:112.74,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"上旬",account:"uar",description:"账单(手机+其他)",amount:1821.01,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"上旬",account:"savings",description:"存款",amount:450,status:"paid",type:"savings"},
+  {year:"2024",month:"11",period:"中旬",account:"房租",description:"房租补",amount:1200,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"中旬",account:"repair",description:"修玻璃",amount:300,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"中旬",account:"freedom",description:"账单",amount:22.07,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"中旬",account:"bilt",description:"账单",amount:95.02,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"中旬",account:"discover",description:"账单",amount:42.92,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"中旬",account:"usbank",description:"账单",amount:540,status:"paid",type:"expense"},
+  {year:"2024",month:"11",period:"中旬",account:"savings",description:"存款",amount:1000,status:"paid",type:"savings"},
+  {year:"2024",month:"12",period:"上旬",account:"car",description:"车贷",amount:757.6,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"上旬",account:"freedom",description:"账单",amount:118.51,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"上旬",account:"bilt",description:"账单",amount:78.29,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"上旬",account:"discover",description:"账单",amount:975.35,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"上旬",account:"personal",description:"欠果还款",amount:1000,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"下旬",account:"travel",description:"夏威夷机票",amount:1668.66,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"下旬",account:"travel",description:"夏威夷turo租车",amount:784.83,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"下旬",account:"personal",description:"omega欠果",amount:2623,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"下旬",account:"apple",description:"账单",amount:65,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"下旬",account:"discover",description:"账单",amount:784.88,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"下旬",account:"freedom",description:"账单",amount:22.07,status:"paid",type:"expense"},
+  {year:"2024",month:"12",period:"下旬",account:"uar",description:"账单",amount:4200,status:"paid",type:"expense"},
+  {year:"2025",month:"2",period:"上旬",account:"apple",description:"账单",amount:616.9,status:"paid",type:"expense"},
+  {year:"2025",month:"2",period:"上旬",account:"freedom",description:"账单",amount:7493.57,status:"paid",type:"expense"},
+  {year:"2025",month:"2",period:"上旬",account:"uar",description:"账单",amount:2707.86,status:"paid",type:"expense"},
+  {year:"2025",month:"2",period:"上旬",account:"bilt",description:"账单",amount:219.28,status:"paid",type:"expense"},
+  {year:"2025",month:"2",period:"上旬",account:"房租",description:"房租",amount:2408,status:"paid",type:"expense"},
+  {year:"2025",month:"2",period:"上旬",account:"car",description:"车贷",amount:758,status:"paid",type:"expense"},
+  {year:"2025",month:"3",period:"上旬",account:"uar",description:"账单",amount:1551.5,status:"paid",type:"expense"},
+  {year:"2025",month:"3",period:"上旬",account:"bilt",description:"账单",amount:192.56,status:"paid",type:"expense"},
+  {year:"2025",month:"3",period:"上旬",account:"freedom",description:"账单",amount:500,status:"paid",type:"expense"},
+  {year:"2025",month:"4",period:"上旬",account:"uar",description:"账单",amount:1068,status:"paid",type:"expense"},
+  {year:"2025",month:"4",period:"上旬",account:"bilt",description:"账单",amount:245.15,status:"paid",type:"expense"},
+  {year:"2025",month:"4",period:"上旬",account:"car",description:"车贷",amount:758,status:"paid",type:"expense"},
+  {year:"2025",month:"4",period:"下旬",account:"apple",description:"账单",amount:30,status:"paid",type:"expense"},
+  {year:"2025",month:"4",period:"下旬",account:"uar",description:"账单",amount:668,status:"paid",type:"expense"},
+  {year:"2025",month:"4",period:"下旬",account:"bilt",description:"账单",amount:120,status:"paid",type:"expense"},
+  {year:"2025",month:"4",period:"下旬",account:"freedom",description:"账单",amount:1385.81,status:"paid",type:"expense"},
+  {year:"2025",month:"5",period:"上旬",account:"房租",description:"房租",amount:2320,status:"paid",type:"expense"},
+  {year:"2025",month:"5",period:"上旬",account:"uar",description:"账单",amount:1432.14,status:"paid",type:"expense"},
+  {year:"2025",month:"5",period:"上旬",account:"bilt",description:"账单",amount:211.79,status:"paid",type:"expense"},
+  {year:"2025",month:"5",period:"上旬",account:"car",description:"车贷",amount:758,status:"paid",type:"expense"},
+  {year:"2025",month:"5",period:"上旬",account:"hood",description:"账单(机票)",amount:1189.56,status:"paid",type:"expense"},
+  {year:"2025",month:"5",period:"中旬",account:"uar",description:"账单(旅游+Bal)",amount:500,status:"paid",type:"expense"},
+  {year:"2025",month:"5",period:"中旬",account:"hood",description:"账单(保养)",amount:600,status:"paid",type:"expense"},
+  {year:"2025",month:"5",period:"中旬",account:"savings",description:"存款",amount:2100,status:"paid",type:"savings"},
+  {year:"2025",month:"6",period:"上旬",account:"房租",description:"房租",amount:2446.06,status:"paid",type:"expense"},
+  {year:"2025",month:"6",period:"上旬",account:"apple",description:"账单",amount:90,status:"paid",type:"expense"},
+  {year:"2025",month:"6",period:"上旬",account:"freedom",description:"账单",amount:96,status:"paid",type:"expense"},
+  {year:"2025",month:"6",period:"上旬",account:"hood",description:"账单",amount:264.03,status:"paid",type:"expense"},
+  {year:"2025",month:"6",period:"上旬",account:"uar",description:"最低还款",amount:67.66,status:"paid",type:"expense"},
+  {year:"2025",month:"6",period:"上旬",account:"car",description:"车贷",amount:758,status:"paid",type:"expense"},
+  {year:"2025",month:"6",period:"上旬",account:"bilt",description:"账单",amount:14.75,status:"paid",type:"expense"},
+  {year:"2025",month:"6",period:"上旬",account:"discover",description:"账单",amount:90.95,status:"paid",type:"expense"},
+  {year:"2025",month:"6",period:"中旬",account:"hood",description:"补还",amount:1349.33,status:"paid",type:"expense"},
+  {year:"2025",month:"6",period:"中旬",account:"uar",description:"补还",amount:5000,status:"paid",type:"expense"},
+  {year:"2025",month:"6",period:"中旬",account:"bilt",description:"账单",amount:302,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"上旬",account:"bilt",description:"账单",amount:404.39,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"上旬",account:"房租",description:"房租",amount:2417,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"上旬",account:"car",description:"车贷",amount:758,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"上旬",account:"usbank",description:"账单",amount:900,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"上旬",account:"freedom",description:"账单",amount:44.14,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"上旬",account:"apple",description:"账单",amount:574.65,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"下旬",account:"房租",description:"房租",amount:2414.27,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"下旬",account:"apple",description:"账单",amount:571.66,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"下旬",account:"freedom",description:"账单",amount:66.21,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"下旬",account:"uar",description:"账单",amount:1202.89,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"下旬",account:"car",description:"车贷",amount:758,status:"paid",type:"expense"},
+  {year:"2025",month:"7",period:"下旬",account:"bilt",description:"账单",amount:305.38,status:"paid",type:"expense"},
+  {year:"2025",month:"8",period:"中旬",account:"apple",description:"账单",amount:571.66,status:"paid",type:"expense"},
+  {year:"2025",month:"8",period:"中旬",account:"uar",description:"账单(7月花销)",amount:830,status:"paid",type:"expense"},
+  {year:"2025",month:"8",period:"中旬",account:"freedom",description:"账单(猫砂盆)",amount:639.23,status:"paid",type:"expense"},
+  {year:"2025",month:"8",period:"中旬",account:"bilt",description:"账单",amount:310,status:"paid",type:"expense"},
+  {year:"2025",month:"8",period:"中旬",account:"savings",description:"存款",amount:1000,status:"paid",type:"savings"},
+  {year:"2025",month:"9",period:"上旬",account:"uar",description:"账单(8月花销)",amount:700,status:"paid",type:"expense"},
+  {year:"2025",month:"9",period:"上旬",account:"freedom",description:"账单",amount:83.74,status:"paid",type:"expense"},
+  {year:"2025",month:"9",period:"上旬",account:"hood",description:"账单",amount:464.89,status:"paid",type:"expense"},
+  {year:"2025",month:"9",period:"上旬",account:"car",description:"车贷",amount:758,status:"paid",type:"expense"},
+  {year:"2025",month:"9",period:"上旬",account:"bilt",description:"账单",amount:77.69,status:"paid",type:"expense"},
+  {year:"2025",month:"10",period:"中旬",account:"uar",description:"账单",amount:751.58,status:"paid",type:"expense"},
+  {year:"2025",month:"10",period:"中旬",account:"bilt",description:"账单",amount:181.86,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"上旬",account:"房租",description:"房租",amount:2500,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"上旬",account:"car",description:"车贷",amount:584.63,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"上旬",account:"apple",description:"账单",amount:62.89,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"上旬",account:"uar",description:"账单",amount:76,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"上旬",account:"freedom",description:"账单",amount:22.07,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"上旬",account:"hood",description:"账单",amount:125.11,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"上旬",account:"coin",description:"还款",amount:3000,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"上旬",account:"bilt",description:"账单",amount:32.1,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"下旬",account:"coin",description:"还款",amount:1600,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"下旬",account:"apple",description:"账单",amount:50.22,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"下旬",account:"房租",description:"房租",amount:1950,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"下旬",account:"bilt",description:"账单",amount:35.58,status:"paid",type:"expense"},
+  {year:"2025",month:"11",period:"下旬",account:"coin",description:"借款",amount:4000,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"中旬",account:"uar",description:"账单",amount:3088,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"中旬",account:"coin",description:"还款",amount:542,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"中旬",account:"discover",description:"账单",amount:42.9,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"中旬",account:"apple",description:"账单",amount:32.09,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"中旬",account:"hood",description:"账单",amount:861.53,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"下旬",account:"coin",description:"还款",amount:200,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"下旬",account:"discover",description:"账单",amount:241,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"下旬",account:"discover",description:"账单(耳机)",amount:197,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"下旬",account:"hood",description:"账单",amount:640,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"下旬",account:"freedom",description:"账单",amount:202.55,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"下旬",account:"房租",description:"房租",amount:1950,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"下旬",account:"apple",description:"账单",amount:21,status:"paid",type:"expense"},
+  {year:"2025",month:"12",period:"下旬",account:"bilt",description:"账单",amount:34.36,status:"paid",type:"expense"},
+  {year:"2026",month:"1",period:"中旬",account:"discover",description:"账单",amount:454.98,status:"paid",type:"expense"},
+  {year:"2026",month:"1",period:"中旬",account:"hood",description:"账单",amount:800,status:"paid",type:"expense"},
+  {year:"2026",month:"1",period:"中旬",account:"uar",description:"账单",amount:1176.91,status:"paid",type:"expense"},
+  {year:"2026",month:"1",period:"下旬",account:"coin",description:"还款",amount:120,status:"paid",type:"expense"},
+  {year:"2026",month:"1",period:"下旬",account:"apple",description:"账单",amount:11.2,status:"paid",type:"expense"},
+  {year:"2026",month:"1",period:"下旬",account:"freedom",description:"账单",amount:22.11,status:"paid",type:"expense"},
+  {year:"2026",month:"1",period:"下旬",account:"bilt",description:"账单",amount:22.35,status:"paid",type:"expense"},
+  {year:"2026",month:"1",period:"下旬",account:"房租",description:"房租",amount:1720,status:"paid",type:"expense"},
+  {year:"2026",month:"1",period:"下旬",account:"bilt",description:"关卡",amount:37,status:"paid",type:"expense"},
+  {year:"2026",month:"2",period:"上旬",account:"uar",description:"账单",amount:299.75,status:"paid",type:"expense"},
+  {year:"2026",month:"2",period:"上旬",account:"hood",description:"账单",amount:1246.31,status:"paid",type:"expense"},
+  {year:"2026",month:"2",period:"上旬",account:"coin",description:"还款",amount:697.43,status:"paid",type:"expense"},
+  {year:"2026",month:"3",period:"上旬",account:"房租",description:"房租",amount:1950,status:"paid",type:"expense"},
+  {year:"2026",month:"3",period:"上旬",account:"hood",description:"账单",amount:269.61,status:"paid",type:"expense"},
+  {year:"2026",month:"3",period:"上旬",account:"freedom",description:"账单",amount:44.22,status:"paid",type:"expense"},
+  {year:"2026",month:"3",period:"上旬",account:"coin",description:"还款",amount:376.14,status:"paid",type:"expense"},
+  {year:"2026",month:"3",period:"上旬",account:"discover",description:"账单",amount:42.19,status:"paid",type:"expense"},
+  {year:"2026",month:"4",period:"上旬",account:"uar",description:"账单(关卡)",amount:94.16,status:"paid",type:"expense"},
+  {year:"2026",month:"4",period:"上旬",account:"房租",description:"房租",amount:1950,status:"paid",type:"expense"},
+  {year:"2026",month:"4",period:"上旬",account:"hood",description:"账单",amount:3226.07,status:"paid",type:"expense"},
+  {year:"2026",month:"4",period:"上旬",account:"freedom",description:"账单",amount:44.22,status:"paid",type:"expense"},
+  {year:"2026",month:"4",period:"上旬",account:"boa",description:"账单",amount:1602.63,status:"paid",type:"expense"},
+  {year:"2026",month:"4",period:"上旬",account:"taxes",description:"报税补税",amount:2966,status:"paid",type:"expense"},
+  {year:"2026",month:"5",period:"上旬",account:"boa",description:"奥运门票",amount:1216,status:"paid",type:"expense"},
+  {year:"2026",month:"5",period:"上旬",account:"hood",description:"账单",amount:386.36,status:"paid",type:"expense"},
+  {year:"2026",month:"5",period:"下旬",account:"房租",description:"房租",amount:1950,status:"paid",type:"expense"},
+];
+
+loadData();
+</script>
+</body>
+</html>
