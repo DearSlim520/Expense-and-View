@@ -166,11 +166,15 @@ function renderOverview() {
   const cm = String(now.getMonth() + 1);
   const pm = String(now.getMonth() === 0 ? 12 : now.getMonth());
   const py = now.getMonth() === 0 ? String(now.getFullYear()-1) : cy;
+  const day = now.getDate();
+  const curPeriod = day <= 10 ? '上旬' : day <= 19 ? '中旬' : '下旬';
 
   const expenses = allData.filter(r => r.type==='expense');
 
   // MTD
   const mtd = expenses.filter(r => r.year===cy && r.month===cm).reduce((s,r)=>s+r.amount,0);
+  // 中旬 only
+  const midOnly = expenses.filter(r => r.year===cy && r.month===cm && r.period==='中旬').reduce((s,r)=>s+r.amount,0);
   // Last month
   const lm = expenses.filter(r => r.year===py && r.month===pm).reduce((s,r)=>s+r.amount,0);
   const delta = lm > 0 ? ((mtd - lm) / lm * 100) : 0;
@@ -207,7 +211,7 @@ function renderOverview() {
         <div>
           <h1>slim / 记账</h1>
           <div class="total-display">${fmt(mtd)}</div>
-          <div class="total-label">本月支出 MTD · ${cy}/${cm.padStart(2,'0')}</div>
+          <div class="total-label">本月支出 MTD · ${cy}/${cm.padStart(2,'0')} · 当前${curPeriod}</div>
           <div class="delta ${delta>=0?'up':'down'}">${deltaStr}</div>
         </div>
         <button class="refresh-btn" onclick="loadData()">↻</button>
@@ -219,6 +223,11 @@ function renderOverview() {
         <div class="label">YTD ${cy}</div>
         <div class="value">${fmt(ytd)}</div>
         <div class="sub">${now.getMonth()+1} 个月</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">中旬消费</div>
+        <div class="value">${fmt(midOnly)}</div>
+        <div class="sub">当月纯消费</div>
       </div>
       <div class="metric-card">
         <div class="label">月均（近12月）</div>
