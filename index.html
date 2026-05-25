@@ -142,7 +142,7 @@ const getColor = a => COLORS[a] || COLORS.other;
 // ── STATE ────────────────────────────────────────────────────────────────
 let allData = [];
 let currentView = 'overview';
-let selYear = 'all';
+let selYear = '2026';
 let selAcct = 'all';
 let trendChart = null;
 
@@ -320,8 +320,8 @@ function renderLedger() {
     return true;
   }).slice().reverse();
 
-  const years = ['all','2024','2025','2026'];
-  const accounts = ['all',...new Set(allData.map(r=>r.account))].sort();
+  const years = ['all','2026','2025','2024'];
+  const pinnedAccts = ['all','hood','boa','coin','chase','discover','apple','房租','car','freedom'];
 
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -331,7 +331,7 @@ function renderLedger() {
         ${years.map(y=>`<div class="tab ${selYear===y?'active':''}" onclick="selYear='${y}';renderLedger()">${y==='all'?'全部':y}</div>`).join('')}
       </div>
       <div class="acct-pills">
-        ${accounts.slice(0,12).map(a=>`<span class="pill ${selAcct===a?'active':''}" onclick="selAcct='${a}';renderLedger()">${a==='all'?'全部':a}</span>`).join('')}
+        ${pinnedAccts.map(a=>`<span class="pill ${selAcct===a?'active':''}" onclick="selAcct='${a}';renderLedger()">${a==='all'?'全部':a}</span>`).join('')}
       </div>
       <div class="ledger">
         <div class="ledger-head"><div>时间</div><div>账户 · 描述</div><div style="text-align:right">金额</div></div>
