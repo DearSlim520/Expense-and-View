@@ -170,39 +170,55 @@ function renderOverview() {
   const curPeriod = day <= 10 ? '上旬' : day <= 19 ? '中旬' : '下旬';
 
   const expenses = allData.filter(r => r.type==='expense');
+  const savings = allData.filter(r => r.type==='savings');
 
   // MTD
   const mtd = expenses.filter(r => r.year===cy && r.month===cm).reduce((s,r)=>s+r.amount,0);
-  // 中旬 only
-  const midOnly = expenses.filter(r => r.year===cy && r.month===cm && r.period==='中旬').reduce((s,r)=>s+r.amount,0);
-  // Last month
+  const mtdSav = savings.filter(r => r.year===cy && r.month===cm).reduce((s,r)=>s+r.amount,0);
   const lm = expenses.filter(r => r.year===py && r.month===pm).reduce((s,r)=>s+r.amount,0);
   const delta = lm > 0 ? ((mtd - lm) / lm * 100) : 0;
   const deltaStr = (delta >= 0 ? '+' : '') + delta.toFixed(0) + '% vs 上月';
 
   // YTD
   const ytd = expenses.filter(r => r.year===cy).reduce((s,r)=>s+r.amount,0);
+  const ytdSav = savings.filter(r => r.year===cy).reduce((s,r)=>s+r.amount,0);
 
-  // Monthly avg last 12 months
+  // All time
+  const allExp = expenses.reduce((s,r)=>s+r.amount,0);
+  const allSav = savings.reduce((s,r)=>s+r.amount,0);
+
+  // Monthly map for YoY
   const monthMap = {};
   expenses.forEach(r => { const k=getMonthKey(r); monthMap[k]=(monthMap[k]||0)+r.amount; });
-  const allMonths = Object.keys(monthMap).sort();
-  const last12 = allMonths.slice(-12);
-  const avg12 = last12.reduce((s,k)=>s+(monthMap[k]||0),0) / (last12.length||1);
 
-  // YTD savings
-  const ytdSav = allData.filter(r=>r.type==='savings'&&r.year===cy).reduce((s,r)=>s+r.amount,0);
-
-  // Year-over-year monthly data (all months Jan-Dec, by year)
-  const years = ['2024','2025','2026'];
+  // Rolling 3 years
+  const years = [String(Number(cy)-2), String(Number(cy)-1), cy];
   const monthNums = ['01','02','03','04','05','06','07','08','09','10','11','12'];
   const yoyData = {};
   years.forEach(y => { yoyData[y] = monthNums.map(m => Math.round(monthMap[`${y}-${m}`]||0)); });
 
-  // Category breakdown YTD
-  const catMap = {};
-  expenses.filter(r=>r.year===cy).forEach(r=>{ catMap[r.account]=(catMap[r.account]||0)+r.amount; });
-  const topCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  // Pie helpers
+  function getPieCats(filterFn) {
+    const m = {};
+    expenses.filter(filterFn).forEach(r=>{ m[r.account]=(m[r.account]||0)+r.amount; });
+    return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  }
+  function pieHTML(canvasId, cats) {
+    return `<div style="display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center">
+      <div class="chart-wrap" style="height:120px"><canvas id="${canvasId}" role="img" aria-label="支出构成饼图"></canvas></div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        ${cats.map(([a,v])=>`<div style="display:flex;align-items:center;gap:5px">
+          <span style="width:6px;height:6px;border-radius:50%;background:${getColor(a)};flex-shrink:0"></span>
+          <span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a}</span>
+          <span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text)">${fmt(v)}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  const mtdCats = getPieCats(r => r.year===cy && r.month===cm);
+  const ytdCats = getPieCats(r => r.year===cy);
+  const allCats = getPieCats(r => true);
 
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -218,31 +234,60 @@ function renderOverview() {
       </div>
     </div>
 
-    <div class="metrics">
-      <div class="metric-card">
-        <div class="label">YTD ${cy}</div>
-        <div class="value">${fmt(ytd)}</div>
-        <div class="sub">${now.getMonth()+1} 个月</div>
+    <div class="section">
+      <div class="section-title">本月 MTD</div>
+      <div class="chart-container">
+        <div class="metrics" style="padding:0 0 12px;grid-template-columns:repeat(2,1fr)">
+          <div class="metric-card">
+            <div class="label">支出</div>
+            <div class="value">${fmt(mtd)}</div>
+            <div class="sub ${delta>=0?'red':'green'}">${deltaStr}</div>
+          </div>
+          <div class="metric-card">
+            <div class="label">储蓄</div>
+            <div class="value" style="color:var(--green)">${fmt(mtdSav)}</div>
+            <div class="sub">本月已记录</div>
+          </div>
+        </div>
+        ${pieHTML('mtdPie', mtdCats)}
       </div>
-      <div class="metric-card">
-        <div class="label">中旬消费</div>
-        <div class="value">${fmt(midOnly)}</div>
-        <div class="sub">当月纯消费</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">今年 YTD · ${cy}</div>
+      <div class="chart-container">
+        <div class="metrics" style="padding:0 0 12px;grid-template-columns:repeat(2,1fr)">
+          <div class="metric-card">
+            <div class="label">支出</div>
+            <div class="value">${fmt(ytd)}</div>
+            <div class="sub">${now.getMonth()+1} 个月</div>
+          </div>
+          <div class="metric-card">
+            <div class="label">储蓄</div>
+            <div class="value" style="color:var(--green)">${fmt(ytdSav)}</div>
+            <div class="sub">已记录部分</div>
+          </div>
+        </div>
+        ${pieHTML('ytdPie', ytdCats)}
       </div>
-      <div class="metric-card">
-        <div class="label">月均（近12月）</div>
-        <div class="value">${fmt(avg12)}</div>
-        <div class="sub">滚动平均</div>
-      </div>
-      <div class="metric-card">
-        <div class="label">上月支出</div>
-        <div class="value">${fmt(lm)}</div>
-        <div class="sub">${py}/${pm.padStart(2,'0')}</div>
-      </div>
-      <div class="metric-card">
-        <div class="label">YTD 储蓄</div>
-        <div class="value" style="color:var(--green)">${fmt(ytdSav)}</div>
-        <div class="sub ${ytdSav>0?'green':''}">已记录部分</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">历史累计</div>
+      <div class="chart-container">
+        <div class="metrics" style="padding:0 0 12px;grid-template-columns:repeat(2,1fr)">
+          <div class="metric-card">
+            <div class="label">总支出</div>
+            <div class="value">${fmt(allExp)}</div>
+            <div class="sub">2024 至今</div>
+          </div>
+          <div class="metric-card">
+            <div class="label">总储蓄</div>
+            <div class="value" style="color:var(--green)">${fmt(allSav)}</div>
+            <div class="sub">已记录部分</div>
+          </div>
+        </div>
+        ${pieHTML('allPie', allCats)}
       </div>
     </div>
 
@@ -250,29 +295,10 @@ function renderOverview() {
       <div class="section-title">跨年月度对比</div>
       <div class="chart-container">
         <div class="legend-row">
-          ${years.map(y=>`<div class="legend-item"><span class="legend-dot" style="background:${YEAR_COLORS[y]}"></span>${y}</div>`).join('')}
+          ${years.map(y=>`<div class="legend-item"><span class="legend-dot" style="background:${YEAR_COLORS[y]||'#aaa'}"></span>${y}</div>`).join('')}
         </div>
         <div class="chart-wrap" style="height:200px">
           <canvas id="yoyChart" role="img" aria-label="跨年月度支出对比"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">YTD 支出构成 · ${cy}</div>
-      <div class="chart-container">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center">
-          <div class="chart-wrap" style="height:160px">
-            <canvas id="pieChart" role="img" aria-label="YTD账户分布饼图"></canvas>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            ${topCats.map(([a,v])=>`
-              <div style="display:flex;align-items:center;gap:6px">
-                <span style="width:7px;height:7px;border-radius:50%;background:${getColor(a)};flex-shrink:0"></span>
-                <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;flex:1">${a}</span>
-                <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text)">${fmt(v)}</span>
-              </div>`).join('')}
-          </div>
         </div>
       </div>
     </div>
@@ -286,7 +312,7 @@ function renderOverview() {
       datasets: years.map(y => ({
         label: y,
         data: yoyData[y],
-        backgroundColor: YEAR_COLORS[y] + (y===cy ? 'dd' : '55'),
+        backgroundColor: (YEAR_COLORS[y]||'#aaa') + (y===cy ? 'dd' : '55'),
         borderRadius: 3,
         borderSkipped: false,
       }))
@@ -301,19 +327,22 @@ function renderOverview() {
     }
   });
 
-  // Pie chart
-  charts.pie = new Chart(document.getElementById('pieChart'), {
-    type: 'doughnut',
-    data: {
-      labels: topCats.map(([a])=>a),
-      datasets: [{ data: topCats.map(([,v])=>Math.round(v)), backgroundColor: topCats.map(([a])=>getColor(a)), borderWidth: 0, hoverOffset: 4 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      cutout: '65%'
-    }
-  });
+  // Three pie charts
+  function makePie(id, cats) {
+    const el = document.getElementById(id);
+    if (!el || !cats.length) return;
+    charts[id] = new Chart(el, {
+      type: 'doughnut',
+      data: {
+        labels: cats.map(([a])=>a),
+        datasets: [{ data: cats.map(([,v])=>Math.round(v)), backgroundColor: cats.map(([a])=>getColor(a)), borderWidth: 0, hoverOffset: 4 }]
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, cutout:'65%' }
+    });
+  }
+  makePie('mtdPie', mtdCats);
+  makePie('ytdPie', ytdCats);
+  makePie('allPie', allCats);
 }
 
 function renderLedger() {
