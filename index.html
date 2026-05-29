@@ -235,8 +235,13 @@ function renderOverview() {
     </div>
 
     <div class="section">
-      <div class="section-title">本月 MTD</div>
-      <div class="chart-container">
+      <div class="tabs" style="margin-bottom:12px">
+        <div class="tab active" id="tab-mtd" onclick="switchStatsTab('mtd')">本月</div>
+        <div class="tab" id="tab-ytd" onclick="switchStatsTab('ytd')">今年</div>
+        <div class="tab" id="tab-all" onclick="switchStatsTab('all')">历史</div>
+      </div>
+
+      <div id="stats-mtd" class="chart-container">
         <div class="metrics" style="padding:0 0 12px;grid-template-columns:repeat(2,1fr)">
           <div class="metric-card">
             <div class="label">支出</div>
@@ -251,11 +256,8 @@ function renderOverview() {
         </div>
         ${pieHTML('mtdPie', mtdCats)}
       </div>
-    </div>
 
-    <div class="section">
-      <div class="section-title">今年 YTD · ${cy}</div>
-      <div class="chart-container">
+      <div id="stats-ytd" class="chart-container" style="display:none">
         <div class="metrics" style="padding:0 0 12px;grid-template-columns:repeat(2,1fr)">
           <div class="metric-card">
             <div class="label">支出</div>
@@ -270,11 +272,8 @@ function renderOverview() {
         </div>
         ${pieHTML('ytdPie', ytdCats)}
       </div>
-    </div>
 
-    <div class="section">
-      <div class="section-title">历史累计</div>
-      <div class="chart-container">
+      <div id="stats-all" class="chart-container" style="display:none">
         <div class="metrics" style="padding:0 0 12px;grid-template-columns:repeat(2,1fr)">
           <div class="metric-card">
             <div class="label">总支出</div>
@@ -340,9 +339,26 @@ function renderOverview() {
       options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, cutout:'65%' }
     });
   }
+  // Only render visible tab's pie immediately, others on demand
   makePie('mtdPie', mtdCats);
-  makePie('ytdPie', ytdCats);
-  makePie('allPie', allCats);
+
+  // Store cats for lazy pie rendering
+  window._ytdCats = ytdCats;
+  window._allCats = allCats;
+  window._piesRendered = { mtd: true, ytd: false, all: false };
+}
+
+function switchStatsTab(tab) {
+  ['mtd','ytd','all'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('stats-'+t).style.display = t===tab ? '' : 'none';
+  });
+  // Lazy render pie on first switch
+  if (!window._piesRendered[tab]) {
+    window._piesRendered[tab] = true;
+    if (tab==='ytd') makePie('ytdPie', window._ytdCats);
+    if (tab==='all') makePie('allPie', window._allCats);
+  }
 }
 
 function renderLedger() {
