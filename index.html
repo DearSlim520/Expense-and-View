@@ -339,13 +339,14 @@ function renderOverview() {
       options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, cutout:'65%' }
     });
   }
-  // Only render visible tab's pie immediately, others on demand
-  makePie('mtdPie', mtdCats);
-
-  // Store cats for lazy pie rendering
-  window._ytdCats = ytdCats;
-  window._allCats = allCats;
-  window._piesRendered = { mtd: true, ytd: false, all: false };
+  // Store cats globally for tab switching
+  window._pieCats = { mtd: mtdCats, ytd: ytdCats, all: allCats };
+  // Render all pies after a tick so hidden canvases have dimensions
+  setTimeout(() => {
+    makePie('mtdPie', mtdCats);
+    makePie('ytdPie', ytdCats);
+    makePie('allPie', allCats);
+  }, 50);
 }
 
 function switchStatsTab(tab) {
@@ -353,12 +354,11 @@ function switchStatsTab(tab) {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('stats-'+t).style.display = t===tab ? '' : 'none';
   });
-  // Lazy render pie on first switch
-  if (!window._piesRendered[tab]) {
-    window._piesRendered[tab] = true;
-    if (tab==='ytd') makePie('ytdPie', window._ytdCats);
-    if (tab==='all') makePie('allPie', window._allCats);
-  }
+  // Re-render pie for the newly visible tab
+  const ids = { mtd:'mtdPie', ytd:'ytdPie', all:'allPie' };
+  const cats = window._pieCats[tab];
+  if (charts[ids[tab]]) { charts[ids[tab]].destroy(); delete charts[ids[tab]]; }
+  setTimeout(() => makePie(ids[tab], cats), 30);
 }
 
 function renderLedger() {
