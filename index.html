@@ -339,26 +339,29 @@ function renderOverview() {
       options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, cutout:'65%' }
     });
   }
-  // Store cats globally for tab switching
+  // Store cats globally, render only MTD pie now (visible)
   window._pieCats = { mtd: mtdCats, ytd: ytdCats, all: allCats };
-  // Render all pies after a tick so hidden canvases have dimensions
-  setTimeout(() => {
-    makePie('mtdPie', mtdCats);
-    makePie('ytdPie', ytdCats);
-    makePie('allPie', allCats);
-  }, 50);
+  window._activeStatsTab = 'mtd';
+  setTimeout(() => makePie('mtdPie', mtdCats), 50);
 }
 
 function switchStatsTab(tab) {
+  if (window._activeStatsTab === tab) return;
+  window._activeStatsTab = tab;
   ['mtd','ytd','all'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('stats-'+t).style.display = t===tab ? '' : 'none';
   });
-  // Re-render pie for the newly visible tab
   const ids = { mtd:'mtdPie', ytd:'ytdPie', all:'allPie' };
-  const cats = window._pieCats[tab];
-  if (charts[ids[tab]]) { charts[ids[tab]].destroy(); delete charts[ids[tab]]; }
-  setTimeout(() => makePie(ids[tab], cats), 30);
+  const id = ids[tab];
+  // Destroy old chart instance if exists
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+  // Wait for display:block to take effect, then render
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      makePie(id, window._pieCats[tab]);
+    });
+  });
 }
 
 function renderLedger() {
