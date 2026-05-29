@@ -204,14 +204,21 @@ function renderOverview() {
     return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,5);
   }
   function pieHTML(canvasId, cats) {
-    return `<div style="display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center">
-      <div class="chart-wrap" style="height:120px"><canvas id="${canvasId}" role="img" aria-label="支出构成饼图"></canvas></div>
-      <div style="display:flex;flex-direction:column;gap:5px">
-        ${cats.map(([a,v])=>`<div style="display:flex;align-items:center;gap:5px">
-          <span style="width:6px;height:6px;border-radius:50%;background:${getColor(a)};flex-shrink:0"></span>
-          <span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a}</span>
-          <span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text)">${fmt(v)}</span>
-        </div>`).join('')}
+    const total = cats.reduce((s,[,v])=>s+v, 0);
+    return `<div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+      <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;gap:1px">
+        ${cats.map(([a,v])=>`<div style="flex:${v};background:${getColor(a)};min-width:2px" title="${a}"></div>`).join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;margin-top:2px">
+        ${cats.map(([a,v])=>{
+          const pct = total > 0 ? (v/total*100).toFixed(0) : 0;
+          return `<div style="display:flex;align-items:center;gap:6px">
+            <span style="width:7px;height:7px;border-radius:50%;background:${getColor(a)};flex-shrink:0"></span>
+            <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;flex:1">${a}</span>
+            <span style="font-size:10px;color:var(--hint);font-family:'DM Mono',monospace">${pct}%</span>
+            <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text)">${fmt(v)}</span>
+          </div>`;
+        }).join('')}
       </div>
     </div>`;
   }
@@ -326,23 +333,8 @@ function renderOverview() {
     }
   });
 
-  // Three pie charts
-  function makePie(id, cats) {
-    const el = document.getElementById(id);
-    if (!el || !cats.length) return;
-    charts[id] = new Chart(el, {
-      type: 'doughnut',
-      data: {
-        labels: cats.map(([a])=>a),
-        datasets: [{ data: cats.map(([,v])=>Math.round(v)), backgroundColor: cats.map(([a])=>getColor(a)), borderWidth: 0, hoverOffset: 4 }]
-      },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, cutout:'65%' }
-    });
-  }
-  // Store cats globally, render only MTD pie now (visible)
-  window._pieCats = { mtd: mtdCats, ytd: ytdCats, all: allCats };
+  // pieHTML uses CSS bars, no canvas needed
   window._activeStatsTab = 'mtd';
-  setTimeout(() => makePie('mtdPie', mtdCats), 50);
 }
 
 function switchStatsTab(tab) {
@@ -351,16 +343,6 @@ function switchStatsTab(tab) {
   ['mtd','ytd','all'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('stats-'+t).style.display = t===tab ? '' : 'none';
-  });
-  const ids = { mtd:'mtdPie', ytd:'ytdPie', all:'allPie' };
-  const id = ids[tab];
-  // Destroy old chart instance if exists
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-  // Wait for display:block to take effect, then render
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      makePie(id, window._pieCats[tab]);
-    });
   });
 }
 
