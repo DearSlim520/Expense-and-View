@@ -76,10 +76,11 @@ body { max-width: 480px; margin: 0 auto; padding: 0 0 80px; min-height: 100vh; }
 .row-amt { text-align: right; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); }
 .savings-row .row-amt { color: var(--green); }
 
-.acct-list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-.acct-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); position: relative; }
+.acct-list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; position: relative; }
+.acct-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); position: relative; background: var(--surface); }
 .acct-row:last-child { border-bottom: none; }
-.acct-bar-bg { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.03); pointer-events: none; }
+.acct-bar-bg { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.03); pointer-events: none; z-index: 0; }
+.acct-row { isolation: isolate; }
 .acct-name { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); width: 80px; flex-shrink: 0; position: relative; z-index: 1; }
 .acct-amount { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-left: auto; position: relative; z-index: 1; }
 .acct-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; position: relative; z-index: 1; }
