@@ -115,6 +115,7 @@ const COLORS = {
   chase:'#56c27a', dmv:'#aaa8a4', aeroplan:'#3dbf8a', other:'#aaa8a4'
 };
 const YEAR_COLORS = { '2024':'#5b9cf6', '2025':'#d47ab0', '2026':'#56c27a' };
+const SAV_COLORS = { '2024':'#b5dfc7', '2025':'#7cc79c', '2026':'#43a96e' };
 const getColor = a => COLORS[a] || COLORS.other;
 const fmt = v => '$' + Math.round(v).toLocaleString();
 const fmtD = v => '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -188,15 +189,9 @@ function renderOverview() {
   const allExp = expenses.reduce((s,r)=>s+r.amount,0);
   const allSav = savings.reduce((s,r)=>s+r.amount,0);
 
-  // Monthly map for YoY
-  const monthMap = {};
-  expenses.forEach(r => { const k=getMonthKey(r); monthMap[k]=(monthMap[k]||0)+r.amount; });
-
   // Rolling 3 years
   const years = [String(Number(cy)-2), String(Number(cy)-1), cy];
   const monthNums = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-  const yoyData = {};
-  years.forEach(y => { yoyData[y] = monthNums.map(m => Math.round(monthMap[`${y}-${m}`]||0)); });
 
   // Pie helpers
   function getPieCats(filterFn) {
@@ -298,9 +293,9 @@ function renderOverview() {
       </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">跨年月度对比</div>
-      <div class="chart-container">
+    <div class="section" id="charts-mtd">
+      <div class="section-title">跨年月度对比 · 消费</div>
+      <div class="chart-container" style="margin-bottom:16px">
         <div class="legend-row">
           ${years.map(y=>`<div class="legend-item"><span class="legend-dot" style="background:${YEAR_COLORS[y]||'#aaa'}"></span>${y}</div>`).join('')}
         </div>
@@ -308,34 +303,175 @@ function renderOverview() {
           <canvas id="yoyChart" role="img" aria-label="跨年月度支出对比"></canvas>
         </div>
       </div>
+      <div class="section-title">跨年月度对比 · 储蓄</div>
+      <div class="chart-container">
+        <div class="legend-row">
+          ${years.map(y=>`<div class="legend-item"><span class="legend-dot" style="background:${SAV_COLORS[y]||'#aaa'}"></span>${y}</div>`).join('')}
+        </div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="savYoyChart" role="img" aria-label="跨年月度储蓄对比"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="charts-ytd" style="display:none">
+      <div class="section-title">累计消费 · 1 月到当月</div>
+      <div class="chart-container" style="margin-bottom:16px">
+        <div class="legend-row">
+          ${years.map(y=>`<div class="legend-item"><span class="legend-dot" style="background:${YEAR_COLORS[y]||'#aaa'}"></span>${y}</div>`).join('')}
+        </div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="cumExpChart" role="img" aria-label="累计消费趋势"></canvas>
+        </div>
+      </div>
+      <div class="section-title">累计储蓄 · 1 月到当月</div>
+      <div class="chart-container">
+        <div class="legend-row">
+          ${years.map(y=>`<div class="legend-item"><span class="legend-dot" style="background:${SAV_COLORS[y]||'#aaa'}"></span>${y}</div>`).join('')}
+        </div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="cumSavChart" role="img" aria-label="累计储蓄趋势"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="charts-all" style="display:none">
+      <div class="section-title">年度对比</div>
+      <div class="chart-container">
+        <div class="legend-row">
+          <div class="legend-item"><span class="legend-dot" style="background:#5b9cf6"></span>消费</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#56c27a"></span>储蓄</div>
+        </div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="yearChart" role="img" aria-label="年度消费储蓄对比"></canvas>
+        </div>
+        <div id="savRateNote" style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:10px"></div>
+      </div>
     </div>
   `;
 
-  // YoY chart
-  charts.yoy = new Chart(document.getElementById('yoyChart'), {
-    type: 'bar',
-    data: {
-      labels: ['1','2','3','4','5','6','7','8','9','10','11','12'],
-      datasets: years.map(y => ({
-        label: y,
-        data: yoyData[y],
-        backgroundColor: (YEAR_COLORS[y]||'#aaa') + (y===cy ? 'dd' : '55'),
-        borderRadius: 3,
-        borderSkipped: false,
-      }))
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks:{color:'#aaa',font:{size:9}}, grid:{display:false}, border:{display:false} },
-        y: { ticks:{color:'#aaa',font:{size:9},callback:v=>'$'+v.toLocaleString()}, grid:{color:'rgba(0,0,0,0.04)'}, border:{display:false} }
-      }
-    }
-  });
+  // Charts for the active tab (rebuilt on tab switch)
+  renderTabCharts('mtd');
 
   // pieHTML uses CSS bars, no canvas needed
   window._activeStatsTab = 'mtd';
+}
+
+function renderTabCharts(tab) {
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  const now = new Date();
+  const cy = String(now.getFullYear());
+  const cmNum = now.getMonth() + 1;
+  const years = [String(Number(cy)-2), String(Number(cy)-1), cy];
+  const monthNums = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+  const expenses = allData.filter(r => r.type==='expense');
+  const savings = allData.filter(r => r.type==='savings');
+  const expMap = {};
+  expenses.forEach(r => { const k=getMonthKey(r); expMap[k]=(expMap[k]||0)+r.amount; });
+  const savMap = {};
+  savings.forEach(r => { const k=getMonthKey(r); savMap[k]=(savMap[k]||0)+r.amount; });
+  const monthly = (map, y) => monthNums.map(m => Math.round(map[`${y}-${m}`]||0));
+  const scales = () => ({
+    x: { ticks:{color:'#aaa',font:{size:9}}, grid:{display:false}, border:{display:false} },
+    y: { ticks:{color:'#aaa',font:{size:9},callback:v=>'$'+v.toLocaleString()}, grid:{color:'rgba(0,0,0,0.04)'}, border:{display:false} }
+  });
+  const baseOpts = () => ({ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: scales() });
+
+  if (tab === 'mtd') {
+    charts.yoy = new Chart(document.getElementById('yoyChart'), {
+      type: 'bar',
+      data: {
+        labels: ['1','2','3','4','5','6','7','8','9','10','11','12'],
+        datasets: years.map(y => ({
+          label: y,
+          data: monthly(expMap, y),
+          backgroundColor: (YEAR_COLORS[y]||'#aaa') + (y===cy ? 'dd' : '55'),
+          borderRadius: 3,
+          borderSkipped: false,
+        }))
+      },
+      options: baseOpts()
+    });
+    charts.savYoy = new Chart(document.getElementById('savYoyChart'), {
+      type: 'bar',
+      data: {
+        labels: ['1','2','3','4','5','6','7','8','9','10','11','12'],
+        datasets: years.map(y => ({
+          label: y,
+          data: monthly(savMap, y),
+          backgroundColor: (SAV_COLORS[y]||'#aaa') + (y===cy ? 'dd' : '55'),
+          borderRadius: 3,
+          borderSkipped: false,
+        }))
+      },
+      options: baseOpts()
+    });
+  }
+
+  if (tab === 'ytd') {
+    const labels = monthNums.slice(0, cmNum).map(m => String(Number(m)));
+    const cumulative = (map, y) => {
+      let run = 0;
+      return monthNums.slice(0, cmNum).map(m => { run += map[`${y}-${m}`]||0; return Math.round(run); });
+    };
+    const lineOpts = () => ({ ...baseOpts(), interaction: { mode: 'index', intersect: false } });
+    charts.cumExp = new Chart(document.getElementById('cumExpChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: years.map(y => ({
+          label: y,
+          data: cumulative(expMap, y),
+          borderColor: YEAR_COLORS[y]||'#aaa',
+          backgroundColor: YEAR_COLORS[y]||'#aaa',
+          borderWidth: y===cy ? 2 : 1.5,
+          pointRadius: 2,
+          tension: 0.3,
+        }))
+      },
+      options: lineOpts()
+    });
+    charts.cumSav = new Chart(document.getElementById('cumSavChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: years.map(y => ({
+          label: y,
+          data: cumulative(savMap, y),
+          borderColor: SAV_COLORS[y]||'#aaa',
+          backgroundColor: SAV_COLORS[y]||'#aaa',
+          borderWidth: y===cy ? 2 : 1.5,
+          pointRadius: 2,
+          tension: 0.3,
+        }))
+      },
+      options: lineOpts()
+    });
+  }
+
+  if (tab === 'all') {
+    const expTotals = years.map(y => Math.round(expenses.filter(r=>r.year===y).reduce((s,r)=>s+r.amount,0)));
+    const savTotals = years.map(y => Math.round(savings.filter(r=>r.year===y).reduce((s,r)=>s+r.amount,0)));
+    charts.year = new Chart(document.getElementById('yearChart'), {
+      type: 'bar',
+      data: {
+        labels: years,
+        datasets: [
+          { label: '消费', data: expTotals, backgroundColor: '#5b9cf6', borderRadius: 3, borderSkipped: false },
+          { label: '储蓄', data: savTotals, backgroundColor: '#56c27a', borderRadius: 3, borderSkipped: false },
+        ]
+      },
+      options: baseOpts()
+    });
+    const note = years.map((y,i) => {
+      const tot = expTotals[i] + savTotals[i];
+      const rate = tot > 0 ? Math.round(savTotals[i]/tot*100) : 0;
+      return `${y} 储蓄率 ${rate}%`;
+    }).join(' · ');
+    document.getElementById('savRateNote').textContent = note + `（${cy} 截至当月）`;
+  }
 }
 
 function switchStatsTab(tab) {
@@ -344,7 +480,9 @@ function switchStatsTab(tab) {
   ['mtd','ytd','all'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('stats-'+t).style.display = t===tab ? '' : 'none';
+    document.getElementById('charts-'+t).style.display = t===tab ? '' : 'none';
   });
+  renderTabCharts(tab);
 }
 
 function renderLedger() {
