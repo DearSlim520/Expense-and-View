@@ -48,17 +48,13 @@ body { max-width: 480px; margin: 0 auto; padding: 0 0 80px; min-height: 100vh; }
 .metric-card .sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
 .metric-card .sub.green { color: var(--green); }
 .metric-card .sub.red { color: var(--red); }
+.mini-goal { height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-top: 5px; }
+.mini-goal-fill { height: 100%; background: var(--green); border-radius: 2px; }
 
 .section { padding: 0 20px; margin-bottom: 24px; }
 .section-title { font-size: 10px; color: var(--hint); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
 .chart-container { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
-.insight-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
-.goal-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; }
-.goal-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
-.goal-fill { height: 100%; background: var(--green); border-radius: 3px; }
-.goal-note { font-size: 11px; color: var(--muted); margin-top: 6px; }
-.insight-line { font-size: 12px; line-height: 1.5; padding-top: 8px; margin-top: 8px; border-top: 1px solid var(--border); }
-.insight-line b { font-weight: 500; }
+
 .chart-wrap { position: relative; }
 .legend-row { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
@@ -231,83 +227,8 @@ function renderOverview() {
   const ytdCats = getPieCats(r => r.year===cy);
   const allCats = getPieCats(r => true);
 
-  // Insights (payoff-batch data: use completed months and same-period
-  // comparisons, never daily-pace projections)
-  const PERIOD_ORDER = { '上旬': 0, '中旬': 1, '下旬': 2 };
-  const curPeriodIdx = PERIOD_ORDER[curPeriod] ?? 2;
-  const monthTotals = {};
-  allData.forEach(r => {
-    const k = getMonthKey(r);
-    if (!monthTotals[k]) monthTotals[k] = { exp: 0, sav: 0 };
-    if (r.type === 'expense') monthTotals[k].exp += r.amount;
-    else if (r.type === 'savings') monthTotals[k].sav += r.amount;
-  });
-  const insights = [];
-  const pct = x => Math.round(x * 100) + '%';
-  // 1. Savings rate vs past 12 completed months
-  const pastKeys = [];
-  {
-    let y = now.getFullYear(), m = now.getMonth() + 1;
-    for (let i = 0; i < 12; i++) {
-      m -= 1; if (m < 1) { m = 12; y -= 1; }
-      pastKeys.push(`${y}-${String(m).padStart(2, '0')}`);
-    }
-  }
-  let pastExp = 0, pastSav = 0;
-  pastKeys.forEach(k => { const t = monthTotals[k]; if (t) { pastExp += t.exp; pastSav += t.sav; } });
-  const pastRate = (pastExp + pastSav) > 0 ? pastSav / (pastExp + pastSav) : null;
-  const curRate = (mtd + mtdSav) > 0 ? mtdSav / (mtd + mtdSav) : null;
-  if (curRate !== null && pastRate !== null) {
-    const diff = Math.round((curRate - pastRate) * 100);
-    const cmp = diff > 0 ? `高于过去 12 个月均值 ${diff} 个百分点`
-      : diff < 0 ? `低于过去 12 个月均值 ${-diff} 个百分点` : '与过去 12 个月均值持平';
-    insights.push(`本月储蓄率 <b>${pct(curRate)}</b>，<span style="color:${diff >= 0 ? 'var(--green)' : 'var(--red)'}">${cmp}</span>`);
-  }
-  // 2. Same-period YoY (payoff batches land by period, so compare through the current period)
-  const thruPeriod = (yy, mm) => expenses
-    .filter(r => r.year === yy && r.month === mm && (PERIOD_ORDER[r.period] ?? 2) <= curPeriodIdx)
-    .reduce((s, r) => s + r.amount, 0);
-  const lySame = thruPeriod(String(now.getFullYear() - 1), cm);
-  const cySame = thruPeriod(cy, cm);
-  if (lySame > 0 && cySame > 0) {
-    const d = Math.round((cySame - lySame) / lySame * 100);
-    const cmp = d > 0 ? `+${d}%` : d < 0 ? `${d}%` : '持平';
-    insights.push(`截至本月${curPeriod}，已记支出 ${fmt(cySame)}，去年同期 ${fmt(lySame)}（<span style="color:${d <= 0 ? 'var(--green)' : 'var(--red)'}">${cmp}</span>）`);
-  }
-  // 3. Best calendar month by average savings
-  const minYear = Math.min(...allData.map(r => Number(r.year)));
-  const calSum = {}, calCount = {};
-  for (let y = minYear; y <= now.getFullYear(); y++) {
-    for (let m = 1; m <= 12; m++) {
-      if (y === now.getFullYear() && m > Number(cm)) break;
-      const t = monthTotals[`${y}-${String(m).padStart(2, '0')}`] || { exp: 0, sav: 0 };
-      calSum[m] = (calSum[m] || 0) + t.sav;
-      calCount[m] = (calCount[m] || 0) + 1;
-    }
-  }
-  let bestMonth = null, bestAvg = -1;
-  Object.keys(calSum).forEach(m => {
-    const avg = calSum[m] / calCount[m];
-    if (avg > bestAvg) { bestAvg = avg; bestMonth = Number(m); }
-  });
-  if (bestMonth !== null && bestAvg > 0) {
-    insights.push(`历年 ${bestMonth} 月平均储蓄最高，月均 ${fmt(bestAvg)}`);
-  }
-  // 4. Recent 3 completed months vs prior 3
-  const avgExp = keys => {
-    const vals = keys.map(k => (monthTotals[k] || { exp: 0 }).exp);
-    return vals.reduce((s, v) => s + v, 0) / keys.length;
-  };
-  const recent3 = avgExp(pastKeys.slice(0, 3));
-  const prior3 = avgExp(pastKeys.slice(3, 6));
-  if (prior3 > 0 && recent3 > 0) {
-    const d = Math.round((recent3 - prior3) / prior3 * 100);
-    const cmp = d > 0 ? `较之前 3 个月 +${d}%` : d < 0 ? `较之前 3 个月 ${d}%` : '与之前 3 个月持平';
-    insights.push(`近 3 个月月均支出 ${fmt(recent3)}，<span style="color:${d <= 0 ? 'var(--green)' : 'var(--red)'}">${cmp}</span>`);
-  }
-  // Goal progress
+  // Mini savings-goal progress for the MTD savings card
   const goalPct = Math.min(100, Math.round(mtdSav / SAVINGS_GOAL_MONTHLY * 100));
-  const goalLeft = Math.max(0, Math.round(SAVINGS_GOAL_MONTHLY - mtdSav));
 
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -320,16 +241,6 @@ function renderOverview() {
           <div class="delta ${delta>=0?'up':'down'}">${deltaStr}</div>
         </div>
         <button class="refresh-btn" onclick="loadData()">↻</button>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">洞察</div>
-      <div class="insight-card">
-        <div class="goal-row"><span>本月储蓄目标</span><span>${fmt(mtdSav)} / ${fmt(SAVINGS_GOAL_MONTHLY)} · ${goalPct}%</span></div>
-        <div class="goal-bar"><div class="goal-fill" style="width:${goalPct}%"></div></div>
-        <div class="goal-note">${goalLeft > 0 ? `距目标还差 ${fmt(goalLeft)}` : '本月储蓄目标已达成'}</div>
-        ${insights.map(l => `<div class="insight-line">${l}</div>`).join('')}
       </div>
     </div>
 
@@ -350,7 +261,7 @@ function renderOverview() {
           <div class="metric-card">
             <div class="label">储蓄</div>
             <div class="value" style="color:var(--green)">${fmt(mtdSav)}</div>
-            <div class="sub">本月已记录</div>
+            <div class="sub">目标 ${fmt(SAVINGS_GOAL_MONTHLY)} · ${goalPct}%</div><div class="mini-goal"><div class="mini-goal-fill" style="width:${goalPct}%"></div></div>
           </div>
         </div>
         ${pieHTML('mtdPie', mtdCats)}
@@ -469,6 +380,21 @@ function renderTabCharts(tab) {
   const savMap = {};
   savings.forEach(r => { const k=getMonthKey(r); savMap[k]=(savMap[k]||0)+r.amount; });
   const monthly = (map, y) => monthNums.map(m => Math.round(map[`${y}-${m}`]||0));
+  // Per-year monthly average: past years over 12 months, current year over elapsed months
+  const yearAvg = (map, y) => {
+    const vals = monthly(map, y);
+    const n = y === cy ? cmNum : 12;
+    return Math.round(vals.slice(0, n).reduce((s, v) => s + v, 0) / n);
+  };
+  const avgLine = (map, y, color) => ({
+    label: y + ' 月均',
+    type: 'line',
+    data: Array(12).fill(yearAvg(map, y)),
+    borderColor: color,
+    borderWidth: 1.5,
+    borderDash: [4, 3],
+    pointRadius: 0,
+  });
   const scales = () => ({
     x: { ticks:{color:'#aaa',font:{size:9}}, grid:{display:false}, border:{display:false} },
     y: { ticks:{color:'#aaa',font:{size:9},callback:v=>'$'+v.toLocaleString()}, grid:{color:'rgba(0,0,0,0.04)'}, border:{display:false} }
@@ -476,17 +402,21 @@ function renderTabCharts(tab) {
   const baseOpts = () => ({ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: scales() });
 
   if (tab === 'mtd') {
+    const barDs = (map, colors) => years.map(y => ({
+      label: y,
+      data: monthly(map, y),
+      backgroundColor: (colors[y]||'#aaa') + (y===cy ? 'dd' : '55'),
+      borderRadius: 3,
+      borderSkipped: false,
+    }));
     charts.yoy = new Chart(document.getElementById('yoyChart'), {
       type: 'bar',
       data: {
         labels: ['1','2','3','4','5','6','7','8','9','10','11','12'],
-        datasets: years.map(y => ({
-          label: y,
-          data: monthly(expMap, y),
-          backgroundColor: (YEAR_COLORS[y]||'#aaa') + (y===cy ? 'dd' : '55'),
-          borderRadius: 3,
-          borderSkipped: false,
-        }))
+        datasets: [
+          ...barDs(expMap, YEAR_COLORS),
+          ...years.map(y => avgLine(expMap, y, YEAR_COLORS[y]||'#aaa')),
+        ]
       },
       options: baseOpts()
     });
@@ -494,13 +424,10 @@ function renderTabCharts(tab) {
       type: 'bar',
       data: {
         labels: ['1','2','3','4','5','6','7','8','9','10','11','12'],
-        datasets: years.map(y => ({
-          label: y,
-          data: monthly(savMap, y),
-          backgroundColor: (SAV_COLORS[y]||'#aaa') + (y===cy ? 'dd' : '55'),
-          borderRadius: 3,
-          borderSkipped: false,
-        }))
+        datasets: [
+          ...barDs(savMap, SAV_COLORS),
+          ...years.map(y => avgLine(savMap, y, SAV_COLORS[y]||'#aaa')),
+        ]
       },
       options: baseOpts()
     });
