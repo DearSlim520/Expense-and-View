@@ -50,6 +50,18 @@ body { max-width: 480px; margin: 0 auto; padding: 0 0 80px; min-height: 100vh; }
 .metric-card .sub.red { color: var(--red); }
 .mini-goal { height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-top: 5px; }
 .mini-goal-fill { height: 100%; background: var(--green); border-radius: 2px; }
+.cap-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; }
+.note-line { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+.fine-print { font-size: 11px; color: var(--hint); padding: 0 20px 16px; line-height: 1.5; }
+.card-list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.card-row { padding: 11px 14px; border-bottom: 1px solid var(--border); position: relative; }
+.card-row:last-child { border-bottom: none; }
+.card-top { display: flex; align-items: baseline; gap: 8px; position: relative; z-index: 1; }
+.card-name { font-family: 'DM Mono', monospace; font-size: 12px; }
+.card-meta { font-size: 10px; color: var(--hint); }
+.card-amt { font-family: 'DM Mono', monospace; font-size: 12px; margin-left: auto; }
+.card-sub { font-size: 10px; color: var(--muted); margin-top: 2px; position: relative; z-index: 1; }
+.card-bar-bg { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.03); pointer-events: none; z-index: 0; }
 
 .section { padding: 0 20px; margin-bottom: 24px; }
 .section-title { font-size: 10px; color: var(--hint); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
@@ -103,6 +115,7 @@ body { max-width: 480px; margin: 0 auto; padding: 0 0 80px; min-height: 100vh; }
   <div class="nav-item active" onclick="showView('overview')" id="nav-overview"><span class="nav-icon">◈</span><span>概览</span></div>
   <div class="nav-item" onclick="showView('ledger')" id="nav-ledger"><span class="nav-icon">≡</span><span>流水</span></div>
   <div class="nav-item" onclick="showView('accounts')" id="nav-accounts"><span class="nav-icon">◎</span><span>账户</span></div>
+  <div class="nav-item" onclick="showView('cards')" id="nav-cards"><span class="nav-icon">▤</span><span>信用卡</span></div>
 </nav>
 
 <script>
@@ -120,6 +133,27 @@ const COLORS = {
 const YEAR_COLORS = { '2024':'#5b9cf6', '2025':'#d47ab0', '2026':'#56c27a' };
 const SAV_COLORS = { '2024':'#b5dfc7', '2025':'#7cc79c', '2026':'#43a96e' };
 const SAVINGS_GOAL_MONTHLY = 3000; // monthly savings goal, edit as needed
+
+// Credit card mapping (Q4 2026; update as rotating categories change).
+// Category estimates assume each card is used for its bonus category.
+const CARD_META = {
+  'boa':      { name: 'BofA Customized Cash', rate: 0.06, rateLabel: '6%', cat: 'online', cap: 2500 },
+  'discover': { name: 'Discover it', rate: 0.05, rateLabel: '5%', cat: 'dining', cap: 1500 },
+  'freedom':  { name: 'Chase Freedom', rate: 0.05, rateLabel: '5%', cat: 'dining', cap: 1500 },
+  'apple':    { name: 'Apple Card', rate: 0.03, rateLabel: '3%', cat: 'apple' },
+  'hood':     { name: 'Robinhood Gold', rate: 0.03, rateLabel: '3%', cat: 'general' },
+  'coin':     { name: 'Coinbase One', rate: 0.025, rateLabel: '2.5%', cat: 'general' },
+  'uar':      { name: 'U.S. Bank Altitude Reserve', rate: 0.045, rateLabel: '4.5x', cat: 'general' },
+  'usbank':   { name: 'U.S. Bank', rate: null, cat: 'general' },
+  'paypal':   { name: 'PayPal Debit', rate: 0.05, rateLabel: '5%', cat: 'monthly' },
+  'PayPal - Restaurants': { name: 'PayPal Debit', rate: 0.05, rateLabel: '5%', cat: 'monthly' },
+  'bilt':     { name: 'Bilt', closed: true },
+  'aeroplan': { name: 'Aeroplan', closed: true },
+  'amex':     { name: 'Amex', rate: null, cat: 'general' },
+  'chase':    { name: 'Chase', rate: null, cat: 'general' },
+};
+const PAYPAL_MONTHLY_CAT = { '2026-11': 'apparel' }; // PayPal 5% pick; default: dining
+const CAT_NAMES = { dining: '餐饮', apparel: '服装', online: '网购', apple: 'Apple', general: '通用' };
 const getColor = a => COLORS[a] || COLORS.other;
 const fmt = v => '$' + Math.round(v).toLocaleString();
 const fmtD = v => '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -154,7 +188,7 @@ function getMonthKey(r) { return `${r.year}-${r.month.padStart(2,'0')}`; }
 
 function showView(v) {
   currentView = v;
-  ['overview','ledger','accounts'].forEach(x => document.getElementById(`nav-${x}`).classList.toggle('active', x===v));
+  ['overview','ledger','accounts','cards'].forEach(x => document.getElementById(`nav-${x}`).classList.toggle('active', x===v));
   Object.values(charts).forEach(c => c.destroy());
   charts = {};
   render();
@@ -163,6 +197,7 @@ function showView(v) {
 function render() {
   if (currentView === 'overview') renderOverview();
   else if (currentView === 'ledger') renderLedger();
+  else if (currentView === 'cards') renderCards();
   else renderAccounts();
 }
 
@@ -573,6 +608,86 @@ function renderAccounts() {
         }).join('')}
       </div>
     </div>`;
+}
+
+function renderCards() {
+  const now = new Date();
+  const cy = String(now.getFullYear());
+  const cmNum = now.getMonth() + 1;
+  const qIdx = Math.floor((cmNum - 1) / 3);
+  const qMonths = [qIdx * 3 + 1, qIdx * 3 + 2, qIdx * 3 + 3].map(m => String(m).padStart(2, '0'));
+  const qLabel = 'Q' + (qIdx + 1);
+  const padM = r => r.month.padStart(2, '0');
+  // Loan draws (借款) are not card spend; keep them out of the card view
+  const expenses = allData.filter(r => r.type === 'expense' && !/借款/.test(r.description || ''));
+  const ytd = expenses.filter(r => r.year === cy);
+  const qExp = expenses.filter(r => r.year === cy && qMonths.includes(padM(r)));
+
+  const catOf = r => {
+    const meta = CARD_META[r.account];
+    if (!meta) return r.account; // self-category labels (房租, car, ...)
+    if (meta.cat === 'monthly') return PAYPAL_MONTHLY_CAT[`${r.year}-${padM(r)}`] || 'dining';
+    return meta.cat || 'general';
+  };
+  const catName = c => CAT_NAMES[c] || c;
+
+  // BofA quarterly cap (6% online shopping, $2,500/quarter)
+  const boaQ = qExp.filter(r => r.account === 'boa').reduce((s, r) => s + r.amount, 0);
+  const boaLeft = Math.max(0, 2500 - boaQ);
+  const boaPct = Math.min(100, Math.round(boaQ / 2500 * 100));
+
+  // Card usage (this year, cards only)
+  const cardTotals = {};
+  ytd.forEach(r => { if (CARD_META[r.account]) cardTotals[r.account] = (cardTotals[r.account] || 0) + r.amount; });
+  const cardRows = Object.keys(cardTotals).sort((a, b) => cardTotals[b] - cardTotals[a]);
+  const maxCard = Math.max(1, ...Object.values(cardTotals));
+  const cardRowsHTML = cardRows.map(a => {
+    const meta = CARD_META[a];
+    const total = cardTotals[a];
+    const pct = Math.round(total / maxCard * 100);
+    const sub = meta.closed ? '已关卡' : [meta.rateLabel, meta.cat === 'monthly' ? '月选类别' : meta.cat ? catName(meta.cat) : null, meta.cap ? `上限 $${meta.cap.toLocaleString()}/季` : null].filter(Boolean).join(' · ');
+    const cb = meta.closed ? '' : meta.rate ? `返现约 ${fmt(total * meta.rate)}` : '返现未知';
+    return `<div class="card-row"><div class="card-bar-bg" style="width:${pct}%"></div>`
+      + `<div class="card-top"><span class="card-name">${meta.name}</span><span class="card-meta">${sub}</span><span class="card-amt">${fmt(total)}</span></div>`
+      + (cb ? `<div class="card-sub">${cb}</div>` : '') + `</div>`;
+  }).join('');
+
+  // Category estimate (current quarter, inferred from card usage)
+  const catTotals = {};
+  qExp.forEach(r => { const c = catOf(r); catTotals[c] = (catTotals[c] || 0) + r.amount; });
+  const catRows = Object.keys(catTotals).sort((a, b) => catTotals[b] - catTotals[a]);
+  const qTotal = qExp.reduce((s, r) => s + r.amount, 0);
+  const maxCat = Math.max(1, ...Object.values(catTotals));
+  const catRowsHTML = catRows.map(c => {
+    const total = catTotals[c];
+    const pct = Math.round(total / maxCat * 100);
+    const share = qTotal > 0 ? Math.round(total / qTotal * 100) : 0;
+    return `<div class="acct-row"><div class="acct-bar-bg" style="width:${pct}%"></div>`
+      + `<span class="acct-dot" style="background:${getColor(c)}"></span>`
+      + `<span class="acct-name">${catName(c)}</span>`
+      + `<span class="acct-amount">${fmt(total)} · ${share}%</span></div>`;
+  }).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="header"><h1>信用卡分析</h1></div>
+    <div class="fine-print">类别占比按用卡习惯推算，仅供参考；返现金额为估算（当前返现率 × 已记还款额）。</div>
+    <div class="section">
+      <div class="section-title">BofA 网购 6% · ${qLabel} 上限</div>
+      <div class="chart-container">
+        <div class="cap-row"><span>已记 ${fmt(boaQ)} / $2,500</span><span>还剩 ${fmt(boaLeft)}</span></div>
+        <div class="mini-goal"><div class="mini-goal-fill" style="width:${boaPct}%"></div></div>
+        <div class="note-line">6% 到 2027/4/1，之后回落 ~3%（到时考虑是否关卡）。未还账单记上后剩余会减少。</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">用卡情况 · ${cy} 年</div>
+      <div class="card-list">${cardRowsHTML}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">类别估算 · ${qLabel}（按卡推算）</div>
+      <div class="acct-list">${catRowsHTML}</div>
+    </div>
+  `;
 }
 
 loadData();
